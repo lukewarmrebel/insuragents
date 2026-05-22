@@ -1,0 +1,188 @@
+{
+  "name": "claim_triage",
+  "task_type": "claim_triage",
+  "description": "Benchmark for insurance claim triage decisions: APPROVE, DENY, or ESCALATE",
+  "examples": [
+    {
+      "id": "triage_001",
+      "input_text": "CLAIM: Claim CL-87654321. 2020 Toyota Camry T-boned at Oak & Maple intersection. Passenger side damage. No injuries. Towed to City Auto Body Shop. Other party: Sarah Johnson, XYZ Insurance. Witnesses: Michael Brown, Officer Thomas Wilson (APD-2023-05-15-42). Date: 05/15/2023, 3:30 PM, clear conditions.\n\nPOLICY: Auto Policy AP-12345678. Policyholder: John Smith. Vehicle: 2020 Toyota Camry. Liability: $100k/$300k BI, $50k PD. Collision Coverage: $500 deductible. Status: Active and current.",
+      "reference_output": "DECISION: APPROVE\n\nREASONING:\n- Coverage: Collision coverage is included in the policy and applies to vehicle-to-vehicle accidents\n- Policy status: Active and current, policyholder in good standing\n- Documentation: Claim is well-documented with police report, witnesses, and clear accident scenario\n- Red flags: None identified. Clear liability, no suspicious circumstances\n\nSUMMARY: Claim is approved. Vehicle collision is covered under the active policy collision coverage. Claimant should be notified of $500 deductible and payment timeline.",
+      "metadata": {
+        "expected_decision": "APPROVE",
+        "claim_type": "auto_collision",
+        "required_phrases": ["APPROVE", "collision", "coverage"],
+        "prohibited_phrases": ["DENY", "not covered"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_002",
+      "input_text": "CLAIM: Claim CL-45612378. Vehicle parked in driveway overnight. Owner reports steering wheel and airbag stolen. Police report filed. Date reported: 06/20/2023. Claim value: $2,800 for parts. Police report number: RPT-2023-06-20-156.\n\nPOLICY: Auto Policy AP-98765432. Policyholder: Maria Garcia. Comprehensive Coverage: $250 deductible. Collision Coverage: $500 deductible. Policy status: Active. Last premium paid: 06/01/2023.",
+      "reference_output": "DECISION: APPROVE\n\nREASONING:\n- Coverage: Theft of vehicle parts falls under Comprehensive coverage, which covers theft and vandalism\n- Policy status: Policy is active and current with recent premium payment\n- Documentation: Police report filed and claim is documented with specific parts and values\n- Red flags: None identified. Standard theft claim with police documentation\n\nSUMMARY: Claim is approved. Theft is covered under Comprehensive coverage with $250 deductible. Payment can be processed upon submission of repair estimates.",
+      "metadata": {
+        "expected_decision": "APPROVE",
+        "claim_type": "auto_theft",
+        "required_phrases": ["APPROVE", "Comprehensive", "covered"],
+        "prohibited_phrases": ["DENY", "excluded"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_003",
+      "input_text": "CLAIM: Claim CL-56789012. Driver claims accident occurred on 05/10/2023. Vehicle taken to independent mechanic. Repair estimate: $4,200. Police report: NONE. No witnesses. No photos. Mechanic is relative of claimant. Claim filed 30 days after alleged accident.\n\nPOLICY: Auto Policy AP-11223344. Collision Coverage: $1,000 deductible. Policy status: Active.",
+      "reference_output": "DECISION: ESCALATE\n\nREASONING:\n- Coverage: Loss is covered under Collision if accident occurred as claimed\n- Policy status: Policy is active at time of alleged loss\n- Documentation: Insufficient documentation. No police report, no independent witnesses, no accident scene photos\n- Red flags: Delayed claim filing (30 days), repairs done by related party, lack of independent verification, suspicious timing\n\nSUMMARY: Claim cannot be approved as filed. Requires investigation for potential fraud. Request police report, independent damage assessment, and detailed accident circumstances. Proceed with SIU investigation.",
+      "metadata": {
+        "expected_decision": "ESCALATE",
+        "claim_type": "auto_collision_suspicious",
+        "required_phrases": ["ESCALATE", "investigation", "documentation"],
+        "prohibited_phrases": ["APPROVE", "immediately process"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_004",
+      "input_text": "CLAIM: Claim CL-78901234. Homeowner reports roof damage from storm on 04/15/2023. Two quotes for roof replacement: $12,000 and $11,500. Hail damage confirmed by inspector. Date loss reported: 04/16/2023. Homeowner has 20-year-old roof.\n\nPOLICY: Homeowners Policy HP-55667788. Dwelling Coverage: $300,000. Wind/Hail Coverage: Yes, $250 deductible. Roof exclusion rider: NONE. Policy status: Active.",
+      "reference_output": "DECISION: APPROVE\n\nREASONING:\n- Coverage: Hail damage is covered under wind and hail coverage. Roof damage is not excluded\n- Policy status: Policy is active at time of loss\n- Documentation: Professional inspection confirms hail damage, multiple repair quotes provided, timely claim filing\n- Red flags: None identified. Age of roof is not disqualifying factor\n\nSUMMARY: Claim is approved. Hail damage is covered under the active wind/hail coverage. Processing should proceed with adjustment of repair estimate to $11,500 and $250 deductible applied.",
+      "metadata": {
+        "expected_decision": "APPROVE",
+        "claim_type": "homeowner_roof",
+        "required_phrases": ["APPROVE", "hail", "covered"],
+        "prohibited_phrases": ["DENY", "excluded", "not covered"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_005",
+      "input_text": "CLAIM: Claim CL-23456789. Homeowner reports water damage to basement due to heavy rain. Finished basement with furniture and carpet. Damage estimate: $8,500. Homeowner states gutters were clogged. Policy was written 45 days ago. Loss date: 05/22/2023.\n\nPOLICY: Homeowners Policy HP-99887766. Dwelling coverage: $250,000. Flood Coverage: NO - flood is specifically excluded. Water damage coverage: Limited to sudden water loss (burst pipes, etc.). Policy effective date: 04/07/2023.",
+      "reference_output": "DECISION: DENY\n\nREASONING:\n- Coverage: Heavy rain water intrusion is classified as flood loss and is excluded from the policy. Water damage coverage only applies to sudden internal water loss\n- Policy status: Policy is active but flood exclusion applies\n- Documentation: Loss is documented but falls under excluded peril\n- Red flags: None. Standard flood exclusion applies\n\nSUMMARY: Claim is denied. Water damage resulting from heavy rain (flood) is specifically excluded from coverage. Homeowner should have obtained separate flood insurance. Denial letter will explain exclusion and appeal rights.",
+      "metadata": {
+        "expected_decision": "DENY",
+        "claim_type": "homeowner_flood",
+        "required_phrases": ["DENY", "flood", "excluded"],
+        "prohibited_phrases": ["APPROVE", "covered"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_006",
+      "input_text": "CLAIM: Claim CL-34567890. Delivery driver reports accident while making business delivery. Vehicle is personal auto. Claim value: $3,500 in damage. Driver states they were using vehicle for rideshare on day of accident.\n\nPOLICY: Auto Policy AP-44556677. Personal auto policy. Business use exclusion: APPLIES. Rideshare exclusion: APPLIES unless rideshare endorsement purchased (none present). Status: Active.",
+      "reference_output": "DECISION: DENY\n\nREASONING:\n- Coverage: Business use and rideshare activities are excluded from the personal auto policy\n- Policy status: Policy is active but exclusions apply to this use\n- Documentation: Claimant admits to business delivery use which violates policy terms\n- Red flags: Clear policy violation. Vehicle used for excluded business purpose\n\nSUMMARY: Claim is denied. Personal auto policy excludes business and rideshare use. Vehicle was being used for business delivery at time of loss, which is a covered peril exclusion. Claimant must obtain commercial or rideshare endorsement for coverage.",
+      "metadata": {
+        "expected_decision": "DENY",
+        "claim_type": "auto_business_use",
+        "required_phrases": ["DENY", "business use", "excluded"],
+        "prohibited_phrases": ["APPROVE", "covered"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_007",
+      "input_text": "CLAIM: Claim CL-45678901. Homeowner reports fire damage. Loss occurred on 03/10/2023. Claim filed 06/10/2023 (3 months later). Fire department report indicates cause: electrical fault in basement. Damage: $35,000 to dwelling. Homeowner claims they were out of state and just discovered damage.\n\nPOLICY: Homeowners Policy HP-11223344. Dwelling Coverage: $350,000. Fire Coverage: Included. Policy status: Active.",
+      "reference_output": "DECISION: ESCALATE\n\nREASONING:\n- Coverage: Fire damage is covered under the policy\n- Policy status: Policy was active at time of loss\n- Documentation: Fire department report confirms loss cause, damage estimate obtained\n- Red flags: Significant delay in claim reporting (3 months) requires investigation. Extended vacancy or abandonment could be issue. Need verification of occupancy status and timeline\n\nSUMMARY: Claim requires escalation and investigation before approval. While fire is covered, the 3-month delay in reporting and claimed extended absence require verification. Request proof of occupancy, explanation for delay, and SIU investigation of circumstances.",
+      "metadata": {
+        "expected_decision": "ESCALATE",
+        "claim_type": "homeowner_fire",
+        "required_phrases": ["ESCALATE", "investigation", "verification"],
+        "prohibited_phrases": ["immediately APPROVE"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_008",
+      "input_text": "CLAIM: Claim CL-56789012. Insured reports vehicle hit pothole and sustained $1,800 in suspension damage. No other vehicle involved. Claim date: 05/15/2023.\n\nPOLICY: Auto Policy AP-77889900. Collision Coverage: $500 deductible. Comprehensive Coverage: $250 deductible. Exclusions: Road hazard damage is NOT covered when not caused by collision with another vehicle. Policy status: Active.",
+      "reference_output": "DECISION: DENY\n\nREASONING:\n- Coverage: Single-vehicle road hazard damage (pothole) is not covered under collision (requires impact with another object/vehicle) or comprehensive (covers theft/vandalism/weather)\n- Policy status: Policy is active but exclusion applies\n- Documentation: Claimant admits to road hazard, not collision with vehicle\n- Red flags: None regarding fraud, but clearly excluded peril\n\nSUMMARY: Claim is denied. Road hazard damage is not a covered peril under the policy. Collision coverage requires impact with another vehicle or object, which did not occur. Claimant should contact roadway authority about pothole liability.",
+      "metadata": {
+        "expected_decision": "DENY",
+        "claim_type": "auto_road_hazard",
+        "required_phrases": ["DENY", "road hazard", "not covered"],
+        "prohibited_phrases": ["APPROVE"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_009",
+      "input_text": "CLAIM: Claim CL-67890123. Insured reports vehicle damage from accident. Police report shows insured was at fault and received citation for speeding (55 mph in 35 mph zone). Other vehicle has $5,000 in damage. Insured's vehicle has $3,200 in damage.\n\nPOLICY: Auto Policy AP-88990011. Collision Coverage: $1,000 deductible. Liability Coverage: $100,000/$300,000. Policy status: Active.",
+      "reference_output": "DECISION: APPROVE\n\nREASONING:\n- Coverage: Collision damage is covered regardless of fault. Liability coverage applies to third-party damage\n- Policy status: Policy is active at time of loss\n- Documentation: Police report documents accident, both vehicles have damage estimates\n- Red flags: Insured at fault and received citation, but coverage is not forfeited for at-fault accidents\n\nSUMMARY: Claim is approved. Collision coverage applies to the insured's vehicle damage with $1,000 deductible applied. Liability claim for other vehicle's $5,000 damage is also covered under liability limits. All-claim can proceed with third-party settlement coordination.",
+      "metadata": {
+        "expected_decision": "APPROVE",
+        "claim_type": "auto_at_fault",
+        "required_phrases": ["APPROVE", "collision", "covered"],
+        "prohibited_phrases": ["DENY", "void"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_010",
+      "input_text": "CLAIM: Claim CL-78901234. Homeowner reports theft of ring from home. Claim value: $8,000. Homeowner reports ring missing after dinner party. Suspicion of guest theft. Police report: Case not investigated, insufficient evidence.\n\nPOLICY: Homeowners Policy HP-22334455. Coverage for theft: $2,500 per item limit (jewelry category). Policy has $10,000 annual aggregate for jewelry. No specific jewelry rider. Status: Active.",
+      "reference_output": "DECISION: ESCALATE\n\nREASONING:\n- Coverage: Theft of jewelry is covered but subject to per-item limit of $2,500\n- Policy status: Policy is active\n- Documentation: Police report indicates insufficient evidence for investigation\n- Red flags: Internal theft (guest) without police investigation could indicate dispute rather than criminal theft. No police confirmation\n\nSUMMARY: Claim requires escalation due to coverage limit and lack of police investigation. Maximum payable under per-item limit is $2,500. Request police incident report and proof of loss (photos, receipts, appraisal) before approval.",
+      "metadata": {
+        "expected_decision": "ESCALATE",
+        "claim_type": "homeowner_jewelry",
+        "required_phrases": ["ESCALATE", "limit", "documentation"],
+        "prohibited_phrases": ["immediately approve $8,000"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_011",
+      "input_text": "CLAIM: Claim CL-89012345. Auto accident claim. Both parties provided statements. Police report confirms insured was NOT at fault. Third party has comprehensive insurance. Insured's vehicle damage: $4,500. Third party damage: $6,200.\n\nPOLICY: Auto Policy AP-12345678. Collision Coverage: $500 deductible. Liability Coverage: $100,000/$300,000. Uninsured Motorist Coverage: $100,000/$300,000. Policy status: Active.",
+      "reference_output": "DECISION: APPROVE\n\nREASONING:\n- Coverage: Collision coverage applies to vehicle damage. Third party is insured so liability claim will be handled by their insurer\n- Policy status: Policy is active\n- Documentation: Police report confirms insured was not at fault. Clear liability established\n- Red flags: None identified. Straightforward not-at-fault collision\n\nSUMMARY: Claim is approved. Insured's vehicle damage of $4,500 is covered under Collision with $500 deductible applied, resulting in $4,000 payment. Third-party claim should be directed to their insurer. Payment can be processed immediately.",
+      "metadata": {
+        "expected_decision": "APPROVE",
+        "claim_type": "auto_not_at_fault",
+        "required_phrases": ["APPROVE", "collision", "covered"],
+        "prohibited_phrases": ["DENY"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_012",
+      "input_text": "CLAIM: Claim CL-90123456. Homeowner reports freezing temperature damage to pipes. Loss date: 01/15/2024. Pipes burst in unheated cabin that was left vacant for entire winter. Damage to interior: $9,000. Property was left vacant intentionally.\n\nPOLICY: Homeowners Policy HP-33445566. Water damage/freezing: Covered if pipes are insulated AND property is heated. Vacancy provision: Coverage void if property is unoccupied for more than 30 consecutive days without heat. Policy status: Active.",
+      "reference_output": "DECISION: DENY\n\nREASONING:\n- Coverage: Freezing damage would normally be covered, BUT policy explicitly excludes losses when property is unheated and vacant\n- Policy status: Policy is active but vacancy exclusion applies\n- Documentation: Homeowner admits to intentional vacation period without heat\n- Red flags: Clear policy violation. Homeowner failed to maintain heat during extended vacancy\n\nSUMMARY: Claim is denied. Coverage is void due to extended vacancy without heat. Policy explicitly requires properties be heated when unoccupied beyond 30 days. Homeowner should have either maintained heat or notified insurer of vacancy status.",
+      "metadata": {
+        "expected_decision": "DENY",
+        "claim_type": "homeowner_vacancy",
+        "required_phrases": ["DENY", "vacancy", "excluded"],
+        "prohibited_phrases": ["APPROVE", "covered"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_013",
+      "input_text": "CLAIM: Claim CL-01234567. Medical payment claim under auto policy. Insured was struck by uninsured motorist. Insured has medical expenses of $3,500. Police report filed. Insured's vehicle has minor damage. Uninsured motorist's vehicle identified but owner has no insurance.\n\nPOLICY: Auto Policy AP-55667788. Medical Payments Coverage: $5,000 per person. Uninsured Motorist Coverage: $100,000/$300,000. Policy status: Active.",
+      "reference_output": "DECISION: APPROVE\n\nREASONING:\n- Coverage: Medical Payments coverage applies to medical expenses from accident regardless of fault\n- Policy status: Policy is active\n- Documentation: Police report filed, medical expenses documented, uninsured motorist identified\n- Red flags: None identified. Clear medical payment claim\n\nSUMMARY: Claim is approved. Medical Payments Coverage will cover the $3,500 in medical expenses in full (within $5,000 limit per person). Uninsured Motorist claim for vehicle damage should also be filed, which will require separate assessment.",
+      "metadata": {
+        "expected_decision": "APPROVE",
+        "claim_type": "auto_medical_payments",
+        "required_phrases": ["APPROVE", "medical", "covered"],
+        "prohibited_phrases": ["DENY"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_014",
+      "input_text": "CLAIM: Claim CL-12345678. Homeowner reports lightning strike damage to roof and electrical system. Loss date: 07/20/2023. Damage estimate: $7,500 for roof, $2,800 for electrical repairs. Professional inspection confirms lightning strike. Claim filed: 07/21/2023.\n\nPOLICY: Homeowners Policy HP-44556677. Lightning/Storm Coverage: Included. Electrical system damage: Covered if caused by external strike (not internal wear). Deductible: $500. Policy status: Active.",
+      "reference_output": "DECISION: APPROVE\n\nREASONING:\n- Coverage: Lightning damage is covered. External electrical damage from lightning strike is covered\n- Policy status: Policy is active\n- Documentation: Professional inspection confirms lightning as cause, timely claim filing\n- Red flags: None identified. Clear cause of loss\n\nSUMMARY: Claim is approved. Lightning damage to roof ($7,500) and electrical system ($2,800) are both covered. Total approved amount is $10,300 - $500 deductible = $9,800. Payment can be processed with receipt of invoices.",
+      "metadata": {
+        "expected_decision": "APPROVE",
+        "claim_type": "homeowner_lightning",
+        "required_phrases": ["APPROVE", "lightning", "covered"],
+        "prohibited_phrases": ["DENY"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    },
+    {
+      "id": "triage_015",
+      "input_text": "CLAIM: Claim CL-23456789. Driver reports loss of vehicle to theft. Vehicle parked on street overnight. Police report filed: Yes. Vehicle has GPS tracker that shows no movement since 10 PM. Insured left car unlocked with keys inside. Vehicle value: $28,000.\n\nPOLICY: Auto Policy AP-66778899. Comprehensive Coverage: $250 deductible. Coverage for theft with vehicle left unlocked: NO EXCLUSION - coverage applies. Policy status: Active.",
+      "reference_output": "DECISION: APPROVE\n\nREASONING:\n- Coverage: Theft is covered under Comprehensive coverage regardless of whether vehicle was locked\n- Policy status: Policy is active\n- Documentation: Police report filed, GPS data confirms theft, vehicle properly documented\n- Red flags: Vehicle was left unlocked and keys left inside, but policy does not exclude theft in this case\n\nSUMMARY: Claim is approved. Vehicle theft is covered under Comprehensive coverage with $250 deductible applied. Payment authorization: $28,000 - $250 = $27,750. Case can proceed to total loss settlement and coordination with law enforcement.",
+      "metadata": {
+        "expected_decision": "APPROVE",
+        "claim_type": "auto_theft",
+        "required_phrases": ["APPROVE", "theft", "covered"],
+        "prohibited_phrases": ["DENY"],
+        "required_sections": ["DECISION", "REASONING", "SUMMARY"]
+      }
+    }
+  ],
+  "metrics": ["triage_accuracy", "compliance", "completeness"]
+}

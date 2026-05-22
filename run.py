@@ -42,33 +42,23 @@ class EnvironmentSetup:
     @staticmethod
     def set_environment_variables() -> None:
         """Set necessary environment variables if not already set."""
-        cache_dir = Path("models/cache")
-
-        if not os.environ.get("TRANSFORMERS_CACHE"):
-            os.environ["TRANSFORMERS_CACHE"] = str(cache_dir)
-            logger.info(f"Set TRANSFORMERS_CACHE to {cache_dir}")
-
-        if not os.environ.get("TORCH_HOME"):
-            os.environ["TORCH_HOME"] = str(cache_dir)
-            logger.info(f"Set TORCH_HOME to {cache_dir}")
-
         os.environ["STREAMLIT_WATCHDOG_DISABLE"] = "1"
         logger.info("Disabled Streamlit watchdog")
 
     @staticmethod
-    def check_huggingface_token() -> bool:
+    def check_anthropic_key() -> bool:
         """
-        Check if HuggingFace token is set in environment.
+        Check if Anthropic API key is set in environment.
 
         Returns:
-            True if token is found, False otherwise
+            True if key is found, False otherwise
         """
-        hf_token = os.environ.get("HF_TOKEN")
-        if hf_token:
-            logger.info("HuggingFace token found")
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if api_key:
+            logger.info("Anthropic API key found")
             return True
         else:
-            logger.warning("No HuggingFace token found in .env file")
+            logger.warning("No Anthropic API key found in .env file")
             return False
 
     @classmethod
@@ -78,10 +68,7 @@ class EnvironmentSetup:
         load_dotenv()
         logger.info("Loaded environment variables from .env file")
 
-        cache_dir = Path("models/cache")
-
         required_dirs = [
-            cache_dir,
             Path("evaluation/evaluations/forms"),
             Path("evaluation/evaluations/submissions"),
             Path("evaluation/benchmarks/results")
@@ -90,7 +77,7 @@ class EnvironmentSetup:
 
         cls.set_environment_variables()
 
-        cls.check_huggingface_token()
+        cls.check_anthropic_key()
 
         logger.info("Environment setup complete")
 

@@ -1,0 +1,16 @@
+{
+  "name": "claim_triage",
+  "task_type": "claim_triage",
+  "description": "Classify an insurance claim as APPROVE, DENY, or ESCALATE with structured reasoning",
+  "variables": ["claim_text", "policy_text"],
+  "strategy_type": "zero_shot",
+  "template": "You are an experienced insurance claims adjuster. Review the following claim and policy, then classify the claim.\n\nCLAIM:\n{claim_text}\n\nPOLICY DETAILS:\n{policy_text}\n\nProvide your analysis in this exact format:\n\nDECISION: [APPROVE|DENY|ESCALATE]\n\nREASONING:\n- Coverage: [is the loss type covered?]\n- Policy status: [active/lapsed/excluded driver?]\n- Documentation: [sufficient/insufficient?]\n- Red flags: [any fraud indicators or ambiguities?]\n\nSUMMARY: [1-2 sentence plain-language explanation of the decision]",
+  "metadata": {
+    "recommended_models": ["claude-opus-4-7", "claude-sonnet-4-6"],
+    "example_input": {
+      "claim_text": "Claim CL-87654321: 2020 Toyota Camry T-boned at Oak & Maple intersection. Passenger side damage. No injuries. Towed to City Auto Body. Other party: Sarah Johnson. Witnessed by Michael Brown and Officer Thomas Wilson.",
+      "policy_text": "Auto Policy AP-12345678. Policyholder: John Smith. Vehicle: 2020 Toyota Camry. Liability: 100k/300k BI, 50k PD. Collision: $500 deductible. Status: Active."
+    },
+    "creation_date": "2024-05-22"
+  }
+}

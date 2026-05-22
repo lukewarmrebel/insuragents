@@ -16,14 +16,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import anthropic
 
-from models.model_loader import (
-    get_supported_models,
-    get_model_details,
-    load_model,
-    get_cpu_friendly_models
-)
-from models.inference import ModelInference
+from models.claude_inference import ClaudeInference
 from prompts.library import get_prompt_library, PromptTemplate
 from prompts.strategies import create_prompt_strategy
 from evaluation.metrics import get_metrics_manager
@@ -44,46 +39,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-class TorchUtils:
-    """Utility class for torch-related operations."""
-
-    @staticmethod
-    def get_torch():
-        """Lazily import torch to avoid conflicts with Streamlit's file watcher."""
-        import torch
-        return torch
-
-    @staticmethod
-    def is_cuda_available() -> bool:
-        """Check if CUDA is available."""
-        torch = TorchUtils.get_torch()
-        return torch.cuda.is_available()
-
-    @staticmethod
-    def get_gpu_info() -> Dict[str, Any]:
-        """Get GPU information if available."""
-        torch = TorchUtils.get_torch()
-        if not torch.cuda.is_available():
-            return {}
-
-        info = {
-            "name": torch.cuda.get_device_name(0),
-            "cuda_version": torch.version.cuda
-        }
-
-        free_memory = torch.cuda.get_device_properties(
-            0).total_memory - torch.cuda.memory_allocated(0)
-        info["free_memory_gb"] = free_memory / (1024**3)
-
-        return info
-
-    @staticmethod
-    def clear_gpu_memory():
-        """Clear GPU memory if CUDA is available."""
-        if TorchUtils.is_cuda_available():
-            torch = TorchUtils.get_torch()
-            torch.cuda.empty_cache()
 
 class SessionState:
     """Class to manage Streamlit session state initialization and access."""
@@ -147,16 +102,11 @@ class DataLoader:
             return f"Error loading sample data: {str(e)}"
 
 class ModelSelectionPage:
-    """Class to handle the model selection page UI and logic."""
-
-    def __init__(self):
-        self.torch_utils = TorchUtils()
+    """Class to handle Claude API configuration."""
 
     def _display_system_info(self):
         """Display system information."""
-        st.subheader("System Information")
-
-        torch = self.torch_utils.get_torch()
+        st.subheader("API Status")
 
         import platform
         import multiprocessing
@@ -164,19 +114,13 @@ class ModelSelectionPage:
         system_info = {
             "Python Version": os.sys.version.split()[0],
             "Streamlit Version": st.__version__,
-            "PyTorch Version": torch.__version__,
             "CPU Cores": multiprocessing.cpu_count(),
             "Operating System": platform.system() + " " + platform.release(),
-            "CUDA Available": "Yes" if torch.cuda.is_available() else "No",
+            "API Connected": "Yes" if st.session_state.model is not None else "No",
         }
 
-        if torch.cuda.is_available():
-            gpu_info = self.torch_utils.get_gpu_info()
-            system_info["GPU"] = gpu_info["name"]
-            system_info["CUDA Version"] = gpu_info["cuda_version"]
-            system_info["GPU Free Memory"] = f"{gpu_info['free_memory_gb']:.2f} GB"
-        else:
-            system_info["RAM"] = f"{os.popen('free -h').readlines()[1].split()[1]}"
+        if st.session_state.model is not None:
+            system_info["Selected Model"] = st.session_state.get("model_id", "Unknown")
 
         system_df = pd.DataFrame(
             list(system_info.items()),
@@ -185,205 +129,75 @@ class ModelSelectionPage:
         system_df = prepare_dataframe_for_display(system_df)
         st.table(system_df)
 
-    def _display_model_selection_ui(self):
-        """Display the model selection UI."""
-        st.subheader("Model Selection")
-
-        available_models = get_supported_models()
-        model_details = get_model_details()
-        cpu_friendly_models = get_cpu_friendly_models()
-
-        has_cuda = self.torch_utils.is_cuda_available()
-
-        if not has_cuda:
-            st.warning(
-                "⚠️ Running on CPU only. Generation will be SLOW with large models. Smaller models like Phi-2 or TinyLLaMA are recommended."
-            )
-
-            st.info("💡 CPU-Friendly Models Recommended")
-
-            model_id = st.selectbox(
-                "Choose a model",
-                available_models,
-                index=available_models.index(
-                    "phi-2") if "phi-2" in available_models else 0,
-                help="Select a model - smaller models (1-3B parameters) work best on CPU"
-            )
-
-            if model_id not in cpu_friendly_models and "13b" in model_id:
-                st.error(
-                    "⚠️ This is a very large model (13B parameters) and will be EXTREMELY slow on CPU. It may appear to get stuck.")
-            elif model_id not in cpu_friendly_models and "7b" in model_id:
-                st.warning(
-                    "⚠️ This is a large model (7B parameters) and will be very slow on CPU. Consider using a smaller model.")
-        else:
-
-            st.info("GPU detected: Using GPU for model inference")
-
-            gpu_info = self.torch_utils.get_gpu_info()
-            free_memory_gb = gpu_info["free_memory_gb"]
-
-            st.info(
-                f"GPU: {gpu_info['name']} with {free_memory_gb:.2f} GB free memory")
-
-            if free_memory_gb < 8:
-                st.warning(
-                    f"⚠️ Only {free_memory_gb:.2f}GB of GPU memory available. Consider using a smaller model or increasing quantization to 8-bit.")
-
-            model_id = st.selectbox(
-                "Choose a model",
-                available_models,
-                index=2 if "llama2-7b-chat" in available_models else 0,
-                help="Select an open-source LLM for insurance tasks"
-            )
-
-        if model_id in model_details:
-            details = model_details[model_id]
-
-            cpu_friendly_badge = "✅ CPU-Friendly" if details.get(
-                "cpu_friendly", False) else "⚠️ May be slow on CPU"
-
-            st.info(f"**{model_id}**\n\n"
-                    f"Description: {details['description']}\n\n"
-                    f"Parameters: {details['parameters']}\n\n"
-                    f"Context Length: {details['context_length']}\n\n"
-                    f"Best for: {details['suitable_for']}\n\n"
-                    f"CPU Performance: {cpu_friendly_badge}")
-
-        cpu_optimize = st.checkbox(
-            "Enable CPU optimizations",
-            value=not has_cuda,  # Default checked when no GPU
-            help="Apply special optimizations for CPU-only inference (recommended when running without GPU)"
-        )
-
-        default_quantization = 0  # 4bit by default
-
-        if not has_cuda:
-            if model_id in ["phi-1.5", "phi-2", "tiny-llama-1b"]:
-                default_quantization = 2  # None for small models on CPU
-            else:
-                default_quantization = 1  # 8bit for larger models
-        elif has_cuda and free_memory_gb < 8:
-            default_quantization = 1  # 8bit for low GPU memory
-
-        quantization = st.selectbox(
-            "Quantization",
-            ["4bit", "8bit", None],
-            index=default_quantization,
-            help="Lower precision reduces memory requirements but may affect quality. For CPU, 8-bit works best for large models, while no quantization is better for smaller models like Phi-2."
-        )
-
-        default_timeout = 300 if not has_cuda else 60
-        generation_timeout = st.slider(
-            "Generation Timeout (seconds)",
-            min_value=30,
-            max_value=600,
-            value=default_timeout,
-            step=30,
-            help="Maximum time allowed for text generation before timeout. For CPU, use higher values (300+ seconds recommended)."
-        )
-
-        st.session_state.generation_timeout = generation_timeout
-
-        if not has_cuda:
-            default_max_tokens = 256 if model_id not in cpu_friendly_models else 512
-            max_tokens_limit = st.slider(
-                "Default Max Tokens Limit",
-                min_value=64,
-                max_value=1024,
-                value=default_max_tokens,
-                step=64,
-                help="Default limit for maximum tokens to generate. Lower values speed up generation on CPU."
-            )
-            st.session_state.default_max_tokens = max_tokens_limit
-
-        return model_id, quantization, cpu_optimize
-
-    def _load_model(self, model_id: str, quantization: str, cpu_optimize: bool):
-        """Load the selected model."""
+    def _connect_to_claude(self, api_key: str, model_id: str):
+        """Connect to Claude API."""
         try:
-
-            device_map = "cpu" if cpu_optimize else "auto"
-
-            if self.torch_utils.is_cuda_available():
-                self.torch_utils.clear_gpu_memory()
-
-            has_cuda = self.torch_utils.is_cuda_available()
-            cpu_friendly_models = get_cpu_friendly_models()
-
-            if not has_cuda and model_id not in cpu_friendly_models:
-                loading_message = st.empty()
-                loading_message.warning(
-                    f"Loading {model_id} on CPU. This may take several minutes. Please be patient...")
-
-            loading_kwargs = {
-                "cpu_optimize": cpu_optimize
-            }
-
-            model, tokenizer, is_cpu_optimized = load_model(
-                model_id=model_id,
-                quantization=quantization,
-                device_map=device_map,
-                **loading_kwargs
-            )
-
-            st.session_state.model = model
-            st.session_state.tokenizer = tokenizer
-            st.session_state.inference_engine = ModelInference(
-                model, tokenizer, cpu_optimized=is_cpu_optimized
-            )
+            client = anthropic.Anthropic(api_key=api_key)
+            st.session_state.model = client
+            st.session_state.tokenizer = None
+            st.session_state.inference_engine = ClaudeInference(client, model_id)
             st.session_state.model_id = model_id
-            st.session_state.quantization = quantization
-            st.session_state.is_cpu_optimized = is_cpu_optimized
+            st.session_state.is_cpu_optimized = False
 
-            st.success(f"Model {model_id} loaded successfully!")
-
-            if not has_cuda:
-                st.info(
-                    "💡 CPU Usage Tips: Keep prompts short, use small max token values, and be patient during generation. The first generation after loading will be the slowest.")
-
+            st.success(f"Connected to Claude API with {model_id}!")
             SessionState.set_tab("prompt_engineering")
             st.rerun()
-
-        except Exception as e:
-            st.error(f"Error loading model: {str(e)}")
-            logger.error(f"Error loading model: {str(e)}")
-            st.info(
-                "Troubleshooting tips: Try using a smaller model or increase quantization to 8-bit. Make sure you have enough memory available.")
+        except anthropic.APIError as e:
+            st.error(f"Failed to connect to Claude API: {str(e)}")
+            logger.error(f"Claude API error: {str(e)}")
 
     def render(self):
-        """Render the model selection page."""
-        st.title("Model Selection")
+        """Render the Claude API configuration page."""
+        st.title("🤖 Claude API Configuration")
 
-        with st.expander("About Model Selection", expanded=False):
+        with st.expander("About Claude for Insurance", expanded=False):
             st.markdown("""
-            This page allows you to select and load an open-source LLM for insurance tasks.
+            This application uses Claude API to power insurance domain tasks.
 
-            You can choose from various supported models and configure parameters such as
-            quantization level to balance between performance and resource usage.
-            
-            If you're experiencing the app getting stuck during generation:
-            - Try a smaller model (Phi-2 or TinyLLaMA are best for CPU)
-            - Use 8bit quantization instead of 4bit
-            - Reduce the max tokens in the generation settings
-            - Use a shorter prompt
-            - Increase the timeout value
-            
-            CPU-specific recommendations:
-            - Phi-2 (2.7B parameters) offers the best balance of quality and speed
-            - TinyLLaMA (1.1B parameters) is the fastest option
-            - Avoid models larger than 7B parameters on CPU
+            **Why Claude?**
+            - No local model loading required — works on any machine
+            - Powerful reasoning for complex insurance decisions
+            - Fast responses with minimal latency
+            - Built-in safety guidelines aligned with insurance workflows
+
+            **Supported Models:**
+            - **Haiku 4.5**: Fast and cost-effective, good for routine triage
+            - **Sonnet 4.6**: Balanced performance and cost for complex reasoning
+            - **Opus 4.7**: Most capable, best for nuanced policy analysis
             """)
 
         col1, col2 = st.columns([2, 1])
 
         with col1:
-            with st.container():
-                model_id, quantization, cpu_optimize = self._display_model_selection_ui()
+            st.subheader("API Configuration")
 
-            if st.button("Load Model"):
-                with st.spinner(f"Loading {model_id}..."):
-                    self._load_model(model_id, quantization, cpu_optimize)
+            api_key = st.text_input(
+                "Anthropic API Key",
+                value=os.environ.get("ANTHROPIC_API_KEY", ""),
+                type="password",
+                help="Get your API key from https://console.anthropic.com"
+            )
+
+            model_options = {
+                "Haiku 4.5 (Fast & Cheap)": "claude-haiku-4-5-20251001",
+                "Sonnet 4.6 (Balanced)": "claude-sonnet-4-6",
+                "Opus 4.7 (Most Capable)": "claude-opus-4-7"
+            }
+
+            selected_model_label = st.selectbox(
+                "Select Model",
+                list(model_options.keys()),
+                index=0,
+                help="Choose based on your speed/quality/cost preferences"
+            )
+            selected_model = model_options[selected_model_label]
+
+            if st.button("Connect to Claude"):
+                if not api_key:
+                    st.error("Please enter an Anthropic API key")
+                else:
+                    with st.spinner(f"Connecting to {selected_model}..."):
+                        self._connect_to_claude(api_key, selected_model)
 
         with col2:
             self._display_system_info()
@@ -1284,30 +1098,19 @@ class SettingsPage:
                 st.success("Settings saved successfully!")
 
         with col2:
-            st.subheader("System Information")
+            st.subheader("API Information")
 
-            torch = TorchUtils.get_torch()
             system_info = {
                 "Python Version": os.sys.version.split()[0],
                 "Streamlit Version": st.__version__,
-                "PyTorch Version": torch.__version__,
-                "CUDA Available": torch.cuda.is_available(),
-                "GPU Count": torch.cuda.device_count() if torch.cuda.is_available() else 0,
-                "Current Device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
+                "API Connected": "Yes" if st.session_state.model is not None else "No",
             }
+
+            if st.session_state.model is not None:
+                system_info["Selected Model"] = st.session_state.get("model_id", "Unknown")
 
             for key, value in system_info.items():
                 st.text(f"{key}: {value}")
-
-            if st.session_state.model is not None:
-                mem_usage = "Unknown"
-                try:
-                    if hasattr(torch.cuda, "memory_allocated"):
-                        mem_usage = f"{torch.cuda.memory_allocated() / 1024**2:.2f} MB"
-                except:
-                    pass
-
-                st.text(f"Model Memory Usage: {mem_usage}")
 
             if st.button("Clear Session"):
 
@@ -1370,9 +1173,10 @@ def main():
 
     st.sidebar.markdown("---")
     st.sidebar.info(
-        "Open-Source Prompt Engineering and Evaluation Framework for Insurance Domain Applications. "
-        "This project helps insurance professionals leverage open-source LLMs for tasks such as "
-        "policy summarization, claim processing, and customer communication."
+        "Claude-powered Insurance AI Framework. This application uses Claude API to provide "
+        "expert-level insurance assistance for claim triage, policy analysis, risk assessment, "
+        "and customer communication. "
+        "[Get API key →](https://console.anthropic.com)"
     )
 
 if __name__ == "__main__":

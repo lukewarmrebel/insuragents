@@ -507,6 +507,64 @@ class ComplianceMetric(EvaluationMetric):
             }
         )
 
+class TriageAccuracyMetric(EvaluationMetric):
+    """Metric for evaluating claim triage decision accuracy."""
+
+    def __init__(self):
+        super().__init__(
+            name="triage_accuracy",
+            description="Evaluates correctness of claim triage decisions (APPROVE/DENY/ESCALATE)",
+            max_score=1.0
+        )
+
+    def evaluate(
+        self,
+        generated_text: str,
+        reference_text: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> EvaluationResult:
+        """
+        Evaluate triage decision accuracy.
+
+        Args:
+            generated_text: Generated decision text containing APPROVE/DENY/ESCALATE
+            reference_text: Unused; uses context["expected_decision"] instead
+            context: Dictionary with "expected_decision" key (APPROVE/DENY/ESCALATE)
+
+        Returns:
+            EvaluationResult with score of 1.0 for correct, 0.0 for incorrect, 0.5 for no decision found
+        """
+        context = context or {}
+        expected_decision = context.get("expected_decision", "").strip().upper()
+
+        generated_upper = generated_text.upper()
+
+        decisions = ["APPROVE", "DENY", "ESCALATE"]
+        extracted_decision = None
+
+        for decision in decisions:
+            if f"DECISION: {decision}" in generated_upper or f"DECISION:{decision}" in generated_upper:
+                extracted_decision = decision
+                break
+
+        if extracted_decision is None:
+            score = 0.5
+            match = False
+        else:
+            match = extracted_decision == expected_decision
+            score = 1.0 if match else 0.0
+
+        return EvaluationResult(
+            metric_name=self.name,
+            score=score,
+            max_score=1.0,
+            details={
+                "expected_decision": expected_decision,
+                "extracted_decision": extracted_decision or "NOT_FOUND",
+                "match": match
+            }
+        )
+
 class EvaluationMetrics:
     """Manager class for evaluation metrics."""
 
@@ -523,6 +581,7 @@ class EvaluationMetrics:
         self.register_metric(ContentCompletenessMetric())
         self.register_metric(ComplexityMetric())
         self.register_metric(ComplianceMetric())
+        self.register_metric(TriageAccuracyMetric())
 
     def register_metric(self, metric: EvaluationMetric):
         """
