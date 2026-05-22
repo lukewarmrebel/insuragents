@@ -6,27 +6,71 @@
 [![Google](https://img.shields.io/badge/Google-Gemini-red.svg)](https://google.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A portfolio-grade LLM application for insurance claim triage. Plug in your preferred LLM provider (Claude, OpenAI, or Gemini) and let AI help classify and route claims intelligently.
+---
 
-## Overview
+## What is this?
 
-Insurance claim processing requires speed and accuracy. This application uses large language models to automate claim triage—analyzing policy documents and claim details to recommend approval, denial, or escalation decisions. By supporting multiple LLM providers, you can choose the model and service that best fits your needs and budget.
+Insurance AI Agents is a full-stack AI application that brings LLM intelligence to insurance claim processing. It reads a policy document and a claim, then decides: **APPROVE, DENY, or ESCALATE** — with structured reasoning explaining every decision.
 
-### What it does
+The system is provider-agnostic. You plug in Claude, GPT-4, or Gemini, and the application routes to the right API automatically. Swap models without touching a single line of code downstream.
 
-- **Claim Triage**: Analyze incoming claims against policy documents and make APPROVE/DENY/ESCALATE recommendations
-- **Multi-Provider Support**: Use Claude (Anthropic), GPT-4 (OpenAI), or Gemini (Google) interchangeably
-- **Prompt Engineering**: Test different prompt strategies (zero-shot, few-shot, chain-of-thought)
-- **Evaluation Metrics**: Measure model accuracy with domain-specific benchmarks
-- **Interactive Dashboard**: Streamlit UI for real-time testing and evaluation
+Built as a portfolio project at the intersection of insurance operations and modern AI engineering.
 
-### Design Philosophy
+---
 
-This application prioritizes **simplicity and flexibility**:
-- No local model downloads or GPU dependencies
-- Plug-and-play LLM providers via environment variables
-- Minimal infrastructure—just Python and an API key
-- Extensible architecture for adding new providers or metrics
+## Why this project exists
+
+Insurance claims teams deal with high volumes of repetitive decisions. A claim comes in, an adjuster checks the policy, evaluates coverage, flags red flags, and makes a call. This project explores how LLMs can assist that workflow — not replace the adjuster, but give them a structured first-pass analysis to act on.
+
+The technical problem is interesting too: different LLM providers have different APIs, different strengths, and different costs. This app solves that with a clean abstraction layer so you can benchmark them against each other on real insurance tasks.
+
+---
+
+## Key Features
+
+### Multi-Provider LLM Support
+Connect to **Claude (Anthropic)**, **GPT-4 (OpenAI)**, or **Gemini (Google)** from a single UI. Each provider is wrapped behind a common interface — the rest of the app doesn't know or care which one is active. Switching providers takes seconds.
+
+### Structured Claim Triage
+The core use case: given a policy document and claim description, the model returns:
+- **DECISION** — APPROVE, DENY, or ESCALATE
+- **REASONING** — coverage analysis, policy status check, documentation review, red flags
+- **SUMMARY** — a concise explanation suitable for the claims file
+
+### Prompt Engineering Studio
+Test and refine prompts interactively. Choose between zero-shot, few-shot, and chain-of-thought strategies. See streaming output in real time. Save outputs and compare across runs.
+
+### Evaluation & Benchmarking
+- **Automated metrics**: ROUGE, BLEU, BERTScore for text quality
+- **Triage Accuracy metric**: domain-specific scoring that compares APPROVE/DENY/ESCALATE decisions against expected verdicts
+- **15-claim benchmark suite** with realistic auto and homeowner scenarios, each with expected decisions and required phrases
+
+### Model Comparison
+Run the same claim through multiple providers and compare outputs side by side. Useful for evaluating which model handles edge cases best or fits your cost constraints.
+
+---
+
+## Supported Models
+
+### Claude (Anthropic)
+| Model | Speed | Best For |
+|-------|-------|----------|
+| Claude Haiku 4.5 | Fast | High-volume triage, cost-sensitive |
+| Claude Sonnet 4.6 | Balanced | General use, good reasoning |
+| Claude Opus 4.7 | Thorough | Complex edge cases, best accuracy |
+
+### OpenAI
+| Model | Speed | Best For |
+|-------|-------|----------|
+| GPT-4o Mini | Fast | Quick decisions, low cost |
+| GPT-4o | Balanced | Strong general performance |
+| GPT-4 Turbo | Thorough | Complex policy analysis |
+
+### Google Gemini
+| Model | Speed | Best For |
+|-------|-------|----------|
+| Gemini 2.5 Flash | Fast | Low latency, high throughput |
+| Gemini 2.5 Lite | Lightweight | Minimal cost, simple claims |
 
 ---
 
@@ -34,53 +78,71 @@ This application prioritizes **simplicity and flexibility**:
 
 ### Prerequisites
 - Python 3.8+
-- At least one LLM API key (Claude, OpenAI, or Gemini)
+- API key from at least one provider (Claude, OpenAI, or Gemini)
 
-### Installation
+### Setup
 
 ```bash
-# Clone the repository
+# Clone the repo
 git clone https://github.com/lukewarmrebel/insuragents.git
 cd insuragents
 
-# Create a virtual environment
+# Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Create .env file with your API key(s)
+# Configure API keys
 cp .env.example .env
-# Edit .env and add your API credentials
+# Open .env and add your key(s)
 ```
 
-### Running the Application
+### Start the App
 
 ```bash
-# Start the application
 python run.py
-
-# Optionally specify port and host
-python run.py --port 8502 --host 127.0.0.1
-
-# Enable debug logging
-LOG_LEVEL=DEBUG python run.py
 ```
 
-The app opens at `http://localhost:8501`. Start on the **Model Selection** page to choose your LLM provider and model.
+Opens at **http://localhost:8501**
+
+---
+
+## How to Use
+
+### Step 1 — Connect a Model
+Go to the **Model Selection** page. Pick a provider (Claude / OpenAI / Gemini), paste your API key, choose a model, and click **Connect**. The key stays in your session and is never stored.
+
+### Step 2 — Triage a Claim
+Go to **Prompt Engineering**. The claim triage template is pre-loaded. Paste in:
+- A **policy document** (use the sample auto policy to get started)
+- A **claim description** (what happened, what's being claimed)
+
+Click **Generate**. The model streams back a structured APPROVE/DENY/ESCALATE decision with full reasoning.
+
+### Step 3 — Evaluate the Output
+Go to **Evaluation**. Score the output against automated metrics (ROUGE, BLEU, BERTScore) or submit a human evaluation with custom criteria.
+
+### Step 4 — Run the Benchmark
+Go to **Benchmarks**. Run the full 15-claim test suite against your connected model. See aggregate accuracy, per-claim decisions, and compare against expected outcomes.
+
+### Step 5 — Compare Providers (Optional)
+Reconnect with a different provider and re-run the same claim or benchmark. Go to **Model Comparison** to review outputs side by side.
 
 ---
 
 ## Configuration
 
-### Environment Variables (`.env`)
-
-Create a `.env` file in the root directory. At minimum, provide **one** API key:
+Create a `.env` file from the template:
 
 ```bash
-# Choose one or more providers:
+cp .env.example .env
+```
 
+Add the key(s) for your chosen provider(s):
+
+```bash
 # Anthropic Claude
 ANTHROPIC_API_KEY=sk-ant-...
 
@@ -90,317 +152,116 @@ OPENAI_API_KEY=sk-...
 # Google Gemini
 GOOGLE_API_KEY=...
 
-# Optional app settings
+# Optional
 APP_PORT=8501
 APP_HOST=0.0.0.0
 LOG_LEVEL=INFO
 ```
 
-Use `.env.example` as a template.
+You only need **one** key to use the app. Add all three if you want to benchmark across providers.
 
 ---
 
-## Supported Models
-
-### Claude (Anthropic)
-| Model | Use Case |
-|-------|----------|
-| **Claude Haiku 4.5** | Fast, cost-effective |
-| **Claude Sonnet 4.6** | Balanced quality/speed |
-| **Claude Opus 4.7** | Best quality |
-
-### OpenAI
-| Model | Use Case |
-|-------|----------|
-| **GPT-4o Mini** | Fast, affordable |
-| **GPT-4o** | Best general-purpose |
-| **GPT-4 Turbo** | Advanced reasoning |
-
-### Google Gemini
-| Model | Use Case |
-|-------|----------|
-| **Gemini 2.0 Flash** | Fastest |
-| **Gemini 1.5 Flash** | Fast & capable |
-| **Gemini 1.5 Pro** | Most powerful |
-
----
-
-## Application Structure
+## Project Structure
 
 ```
 insuragents/
-├── app.py                          # Main Streamlit application
-├── run.py                          # Application entrypoint
-├── requirements.txt                # Dependencies
-├── .env.example                    # Environment template
+├── app.py                          # Streamlit app (all pages live here)
+├── run.py                          # Entrypoint — sets env vars, starts server
+├── requirements.txt
+├── .env.example
 │
-├── models/                         # LLM provider integrations
-│   ├── base_inference.py           # Abstract base class
-│   ├── claude_inference.py         # Claude API wrapper
-│   ├── openai_inference.py         # OpenAI API wrapper
-│   ├── gemini_inference.py         # Google Gemini wrapper
-│   └── factory.py                  # Provider factory & model registry
+├── models/                         # LLM provider layer
+│   ├── base_inference.py           # Abstract interface (generate, stream)
+│   ├── claude_inference.py         # Anthropic SDK wrapper
+│   ├── openai_inference.py         # OpenAI SDK wrapper
+│   ├── gemini_inference.py         # Google Generative AI wrapper
+│   └── factory.py                  # Provider registry + factory function
 │
-├── prompts/                        # Prompt templates
-│   ├── library.py                  # Template manager
-│   ├── strategies.py               # Prompting strategies
-│   └── templates/                  # JSON prompt definitions
-│       └── claim_triage.json       # Claim triage template
+├── prompts/
+│   ├── library.py                  # Template loader and manager
+│   ├── strategies.py               # Zero-shot, few-shot, CoT
+│   └── templates/
+│       └── claim_triage.json       # Claim triage prompt template
 │
-├── evaluation/                     # Metrics and benchmarks
-│   ├── metrics.py                  # Evaluation metrics (ROUGE, BLEU, BERTScore, Triage Accuracy)
-│   ├── human_eval.py               # Human evaluation forms
-│   ├── benchmarks.py               # Benchmark dataset management
-│   ├── evaluations/                # Saved evaluation results
-│   └── benchmarks/                 # Benchmark datasets
-│       └── claim_triage_benchmark.json
+├── evaluation/
+│   ├── metrics.py                  # ROUGE, BLEU, BERTScore, TriageAccuracy
+│   ├── human_eval.py               # Human evaluation form handling
+│   ├── benchmarks.py               # Benchmark runner
+│   └── benchmarks/
+│       └── claim_triage_benchmark.json   # 15 test claims
 │
-├── data/                           # Sample insurance documents
-│   ├── policies/                   # Sample policy files
-│   ├── claims/                     # Sample claim files
-│   └── communications/             # Sample communications
-│
-└── utils/                          # Utilities
-    └── dataframe_utils.py          # Data formatting for Streamlit
+└── data/
+    ├── policies/sample_auto_policy.txt
+    ├── claims/sample_auto_claim.txt
+    └── communications/sample_customer_inquiry.txt
 ```
 
 ---
 
-## How It Works
+## Architecture
 
-### Architecture
-
-The application uses a **provider abstraction layer** to support multiple LLM backends:
+The provider abstraction is the core design decision. Every LLM provider is wrapped in a class that implements the same two methods: `generate()` and `generate_with_streaming()`. The factory instantiates the right one at runtime based on user selection. Nothing downstream needs to change when you swap providers.
 
 ```
-┌──────────────────────┐
-│  Streamlit UI        │
-│  (app.py)            │
-└──────┬───────────────┘
-       │
-       ├─ Model Selection (choose provider + API key + model)
-       └─ Create inference engine via factory
-              │
-              ▼
-       ┌────────────────────┐
-       │ BaseInference      │  (abstract interface)
-       │ - generate()       │
-       │ - generate_with_  │
-       │   streaming()      │
-       └──────┬─────────────┘
-              │
-       ┌──────┴──────────┬─────────────┐
-       ▼                 ▼             ▼
-   ClaudeInference  OpenAIInference  GeminiInference
-   (anthropic)      (openai)         (google.generativeai)
+Streamlit UI (app.py)
+    │
+    ├── Model Selection → create_inference_engine(provider, key, model)
+    │
+    ▼
+BaseInference (abstract)
+    ├── ClaudeInference   → anthropic.Anthropic client
+    ├── OpenAIInference   → openai.OpenAI client
+    └── GeminiInference   → google.generativeai client
 ```
 
-All downstream components (`PromptEngineeringPage`, `EvaluationPage`, `BenchmarksPage`) call the standard interface, making provider swaps transparent to the rest of the application.
-
-### Key Components
-
-**models/factory.py**
-- `PROVIDER_MODELS`: Nested dict of providers → models → model IDs
-- `create_inference_engine()`: Instantiates the correct inference class based on user selection
-
-**models/{claude,openai,gemini}_inference.py**
-- Each implements `BaseInference` interface
-- `generate()`: Single generation request
-- `generate_with_streaming()`: Streaming generation with callback
-
-**prompts/library.py**
-- `PromptLibrary`: Loads JSON templates from `prompts/templates/`
-- `PromptTemplate`: Variable substitution and formatting
-- `PromptStrategy`: Zero-shot, few-shot, chain-of-thought implementations
-
-**evaluation/metrics.py**
-- Automated metrics: ROUGE, BLEU, BERTScore
-- Domain-specific: `TriageAccuracyMetric` (compares APPROVE/DENY/ESCALATE decisions)
-- `MetricsManager`: Batch evaluation
-
-**evaluation/benchmarks.py**
-- `Benchmark`, `BenchmarkManager`: Load and run benchmark datasets
-- Example: `claim_triage_benchmark.json` with 15 realistic claim scenarios
+All pages — Prompt Engineering, Evaluation, Benchmarks — call `inference_engine.generate(prompt)`. The provider is transparent.
 
 ---
 
-## Usage Workflows
+## Extending
 
-### 1. Claim Triage (Default)
+### Add a New Provider
 
-1. **Model Selection** → Choose provider, enter API key, select model → Connect
-2. **Prompt Engineering** → Load claim triage template → Paste policy + claim → Generate decision
-3. **Evaluation** → View decision (APPROVE/DENY/ESCALATE), reasoning, and confidence
-4. **Benchmarks** → Run triage against 15 benchmark claims → Compare model performance
+1. Create `models/myprovider_inference.py` extending `BaseInference`
+2. Implement `generate()` and `generate_with_streaming()`
+3. Add entries to `PROVIDER_MODELS` in `models/factory.py`
+4. Add a branch in `create_inference_engine()`
 
-### 2. Testing Multiple Providers
+### Add a Custom Metric
 
-1. Go to **Model Selection**
-2. Switch between Claude, OpenAI, and Gemini
-3. Re-run the same prompt on each provider
-4. Compare outputs in **Model Comparison** page
-
-### 3. Prompt Refinement
-
-1. **Prompt Engineering** → Modify the prompt template (zero-shot, few-shot, CoT)
-2. Test against a few claims
-3. Run **Benchmarks** to measure average accuracy across all test cases
-4. Iterate on template until satisfied
-
----
-
-## Sample Data
-
-The application includes three sample documents:
-
-- `data/policies/sample_auto_policy.txt` — Auto insurance policy
-- `data/claims/sample_auto_claim.txt` — Claim for collision damage
-- `data/communications/sample_customer_inquiry.txt` — Customer service inquiry
-
-Reference these when testing prompts, or upload your own documents.
-
----
-
-## Extending the Framework
-
-### Adding a New LLM Provider
-
-1. Create `models/my_provider_inference.py`:
-   ```python
-   from models.base_inference import BaseInference, SYSTEM_MESSAGE
-   
-   class MyProviderInference(BaseInference):
-       def __init__(self, api_key: str, model_id: str):
-           self.client = MyProvider(api_key=api_key)
-           self.model_id = model_id
-       
-       def generate(self, prompt, max_length=1024, temperature=0.7, **kwargs):
-           # Implement generation
-           response = self.client.complete(prompt=prompt, ...)
-           return [response.text]
-       
-       def generate_with_streaming(self, prompt, callback, **kwargs):
-           # Implement streaming
-           full_text = ""
-           for chunk in self.client.stream(prompt=prompt, ...):
-               callback(chunk)
-               full_text += chunk
-           return full_text
-   ```
-
-2. Update `models/factory.py`:
-   ```python
-   PROVIDER_MODELS["MyProvider"] = {
-       "Model A": "model-a-id",
-       "Model B": "model-b-id",
-   }
-   
-   def create_inference_engine(provider, api_key, model_id):
-       # ... existing code ...
-       elif provider == "MyProvider":
-           from models.my_provider_inference import MyProviderInference
-           return MyProviderInference(api_key, model_id)
-   ```
-
-3. Update `.env.example` with the new API key variable.
-
-### Adding a Custom Evaluation Metric
-
-1. Create a metric class in `evaluation/metrics.py`:
-   ```python
-   class MyMetric(EvaluationMetric):
-       def __init__(self):
-           super().__init__(
-               name="my_metric",
-               description="My custom metric",
-               max_score=1.0
-           )
-       
-       def evaluate(self, generated_text, reference_text, context=None):
-           score = my_scoring_logic(generated_text, reference_text)
-           return EvaluationResult(
-               metric_name=self.name,
-               score=score,
-               max_score=self.max_score,
-               details={"analysis": "..."}
-           )
-   ```
-
-2. Register it in `EvaluationMetrics._register_default_metrics()`:
-   ```python
-   self.register_metric(MyMetric())
-   ```
+1. Subclass `EvaluationMetric` in `evaluation/metrics.py`
+2. Implement `evaluate(generated_text, reference_text, context)`
+3. Register with `self.register_metric(MyMetric())` in `_register_default_metrics()`
 
 ---
 
 ## Troubleshooting
 
-### "API Key not found" error
+**Nothing loads at localhost:8501**
+Make sure you ran `python run.py`, not `streamlit run app.py` directly. The entrypoint sets required environment variables before launching.
 
-Ensure your `.env` file exists and contains the correct key for your chosen provider:
-- `ANTHROPIC_API_KEY` for Claude
-- `OPENAI_API_KEY` for OpenAI
-- `GOOGLE_API_KEY` for Gemini
+**"API Key not found"**
+Check your `.env` file has the right variable name for your provider (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GOOGLE_API_KEY`).
 
-### "Rate limit exceeded" error
+**Generation is slow**
+Switch to a faster model — Haiku, GPT-4o Mini, or Gemini 2.5 Flash. Also try reducing `max_tokens`.
 
-You've hit the provider's rate limit. Wait a few moments and retry, or consider upgrading your API plan.
+**Model Comparison page is empty**
+Generate outputs on the Prompt Engineering page first. Comparison requires at least one saved run.
 
-### Generation is slow or times out
-
-Try a **faster** model:
-- Claude Haiku instead of Opus
-- GPT-4o Mini instead of GPT-4 Turbo
-- Gemini Flash instead of Gemini Pro
-
-Reduce `max_tokens` in the prompt engineering page.
-
-### Model comparison page is empty
-
-Ensure you've generated outputs on the **Prompt Engineering** page first. Model comparison requires saved outputs.
-
-### Debug logs
-
-Enable debug logging to see detailed request/response logs:
+**Debug logs**
 ```bash
 LOG_LEVEL=DEBUG python run.py
 ```
-
-Logs are written to `run.log` and `app.log`.
-
----
-
-## Project Philosophy
-
-This portfolio project demonstrates:
-
-- **Multi-provider abstraction**: Clean factory pattern supporting Claude, OpenAI, and Gemini without downstream coupling
-- **Domain-specific application**: Real-world insurance use case (claim triage) with structured evaluation metrics
-- **Minimal infrastructure**: API-based, no local models, no GPU requirements—runs on any machine with internet
-- **Extensibility**: Easy to add new providers, prompt templates, or evaluation metrics
-- **Production-readiness**: Logging, error handling, streaming support, session state management
-
----
-
-## Testing
-
-The application includes:
-- `evaluation/benchmarks/claim_triage_benchmark.json` — 15 test claims with expected outcomes
-- `TriageAccuracyMetric` — Evaluates whether model decisions match expected verdicts
-- **Benchmarks page** — Run full benchmark suite and compare providers
-
-No formal test suite is present; validation is done via the interactive dashboard and benchmark runs.
+Logs write to `run.log` and `app.log`.
 
 ---
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT — see LICENSE file.
 
 ---
 
-## Author
-
-Built as a portfolio project exploring LLM integration, prompt engineering, and multi-provider abstraction.
-
-**Repository**: [github.com/lukewarmrebel/insuragents](https://github.com/lukewarmrebel/insuragents)
+Built by [@lukewarmrebel](https://github.com/lukewarmrebel)
