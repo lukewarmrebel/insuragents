@@ -1,118 +1,47 @@
-# Insurance LLM Framework
+# Insurance AI Agents
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Claude](https://img.shields.io/badge/Claude-Anthropic-orange.svg)](https://anthropic.com)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT-blue.svg)](https://openai.com)
+[![Google](https://img.shields.io/badge/Google-Gemini-red.svg)](https://google.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An open-source prompt engineering and evaluation framework for insurance domain applications, leveraging the power of Large Language Models (LLMs) to transform insurance workflows.
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [System Requirements](#system-requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Architecture](#architecture)
-  - [Key Components](#key-components)
-  - [Class Hierarchy](#class-hierarchy)
-- [Model Support](#model-support)
-- [CPU vs GPU Optimization](#cpu-vs-gpu-optimization)
-- [Prompt Engineering](#prompt-engineering)
-- [Evaluation Framework](#evaluation-framework)
-- [Benchmarking](#benchmarking)
-- [Extending the Framework](#extending-the-framework)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
+A portfolio-grade LLM application for insurance claim triage. Plug in your preferred LLM provider (Claude, OpenAI, or Gemini) and let AI help classify and route claims intelligently.
 
 ## Overview
 
-The Insurance LLM Framework provides a comprehensive suite of tools for insurance professionals to leverage open-source Large Language Models (LLMs) for various domain-specific tasks. By combining prompt engineering, model management, and evaluation capabilities, the framework enables insurance companies to harness the power of AI for improving operational efficiency and customer experience.
+Insurance claim processing requires speed and accuracy. This application uses large language models to automate claim triage—analyzing policy documents and claim details to recommend approval, denial, or escalation decisions. By supporting multiple LLM providers, you can choose the model and service that best fits your needs and budget.
 
-### Insurance Domain Applications
+### What it does
 
-The framework is specifically designed for insurance-related tasks such as:
+- **Claim Triage**: Analyze incoming claims against policy documents and make APPROVE/DENY/ESCALATE recommendations
+- **Multi-Provider Support**: Use Claude (Anthropic), GPT-4 (OpenAI), or Gemini (Google) interchangeably
+- **Prompt Engineering**: Test different prompt strategies (zero-shot, few-shot, chain-of-thought)
+- **Evaluation Metrics**: Measure model accuracy with domain-specific benchmarks
+- **Interactive Dashboard**: Streamlit UI for real-time testing and evaluation
 
-- **Policy Summarization**: Generate concise summaries of complex insurance policies
-- **Claim Response Drafting**: Create professional responses to insurance claims
-- **Risk Assessment Reporting**: Analyze and report on risk factors from unstructured data
-- **Customer Communication**: Generate personalized customer communications
-- **Underwriting Assistance**: Support underwriters with relevant information extraction
-- **Compliance Checking**: Verify document compliance with regulatory requirements
+### Design Philosophy
 
-## Key Features
+This application prioritizes **simplicity and flexibility**:
+- No local model downloads or GPU dependencies
+- Plug-and-play LLM providers via environment variables
+- Minimal infrastructure—just Python and an API key
+- Extensible architecture for adding new providers or metrics
 
-The framework offers a comprehensive set of features designed to make LLMs accessible and effective for insurance professionals:
+---
 
-### Prompt Library
-- Extensive collection of insurance-specific prompt templates
-- Customizable templates with variable substitution
-- Support for different prompting strategies (zero-shot, few-shot, chain-of-thought)
-- Template management interface for creating and editing prompts
-
-### Model Selection
-- Support for multiple open-source LLMs (LLaMA-2, Mistral, Falcon, Phi-2, etc.)
-- Optimized configurations for both CPU and GPU environments
-- Quantization options for resource-constrained environments
-- Model performance metrics and comparison tools
-
-### Evaluation Dashboard
-- Automated metrics for assessing output quality (ROUGE, BLEU, BERTScore)
-- Human evaluation protocols with customizable rubrics
-- Comparative evaluation across different models and prompts
-- Visualization of evaluation results
-
-### Output Management
-- Save and export generated content in multiple formats
-- Version tracking for generated outputs
-- Batch processing capabilities for high-volume tasks
-- Integration with common document formats
-
-### Benchmarking
-- Pre-defined benchmark datasets for insurance tasks
-- Custom benchmark creation tools
-- Performance comparison across models and configurations
-- Detailed reporting and visualization
-
-### Customization
-- Extensible architecture for adding new models and capabilities
-- API for programmatic access to framework components
-- Configuration options for different deployment scenarios
-- Support for custom evaluation metrics
-
-## System Requirements
-
-### Minimum Requirements
-- **Python**: 3.8 or higher
-- **RAM**: 8GB (for small models on CPU)
-- **Storage**: 5GB for base installation, plus model storage (varies by model)
-- **OS**: Windows 10/11, macOS 10.15+, Ubuntu 20.04+ or other Linux distributions
-
-### Recommended Requirements
-- **Python**: 3.10 or higher
-- **RAM**: 16GB+ (32GB+ for larger models)
-- **GPU**: NVIDIA GPU with 8GB+ VRAM (for faster inference)
-- **CUDA**: 11.7 or higher (for GPU acceleration)
-- **Storage**: 20GB+ SSD storage
-- **OS**: Ubuntu 22.04 or other Linux distributions
-
-## Installation
+## Quick Start
 
 ### Prerequisites
 - Python 3.8+
-- pip (Python package installer)
-- git (for cloning the repository)
-- Virtual environment tool (venv, conda, etc.)
+- At least one LLM API key (Claude, OpenAI, or Gemini)
 
-### Step-by-Step Installation
+### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/insurance-llm-framework.git
-cd insurance-llm-framework
+git clone https://github.com/lukewarmrebel/insuragents.git
+cd insuragents
 
 # Create a virtual environment
 python -m venv .venv
@@ -121,597 +50,357 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Optional: Install GPU dependencies if you have a compatible GPU
-pip install torch==2.1.2+cu118 -f https://download.pytorch.org/whl/torch_stable.html
+# Create .env file with your API key(s)
+cp .env.example .env
+# Edit .env and add your API credentials
 ```
 
-### Docker Installation (Alternative)
+### Running the Application
 
 ```bash
-# Build the Docker image
-docker build -t insurance-llm-framework .
+# Start the application
+python run.py
 
-# Run the container
-docker run -p 8501:8501 -v $(pwd)/data:/app/data insurance-llm-framework
+# Optionally specify port and host
+python run.py --port 8502 --host 127.0.0.1
+
+# Enable debug logging
+LOG_LEVEL=DEBUG python run.py
 ```
+
+The app opens at `http://localhost:8501`. Start on the **Model Selection** page to choose your LLM provider and model.
+
+---
 
 ## Configuration
 
-### Environment Variables
+### Environment Variables (`.env`)
 
-Create a `.env` file in the root directory with the following variables:
+Create a `.env` file in the root directory. At minimum, provide **one** API key:
 
-```
-# HuggingFace token for accessing gated models (required for some models)
-HF_TOKEN=your_huggingface_token
+```bash
+# Choose one or more providers:
 
-# Application settings
+# Anthropic Claude
+ANTHROPIC_API_KEY=sk-ant-...
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+
+# Google Gemini
+GOOGLE_API_KEY=...
+
+# Optional app settings
 APP_PORT=8501
 APP_HOST=0.0.0.0
-
-# Model cache directory (optional)
-TRANSFORMERS_CACHE=./models/cache
-
-# Logging level (optional)
 LOG_LEVEL=INFO
 ```
 
-## Usage
+Use `.env.example` as a template.
 
-### Starting the Web Interface
+---
 
-```bash
-# Basic usage
-python run.py
+## Supported Models
 
-# With custom port and host
-python run.py --port 8502 --host 127.0.0.1
+### Claude (Anthropic)
+| Model | Use Case |
+|-------|----------|
+| **Claude Haiku 4.5** | Fast, cost-effective |
+| **Claude Sonnet 4.6** | Balanced quality/speed |
+| **Claude Opus 4.7** | Best quality |
 
-# With debug logging
-LOG_LEVEL=DEBUG python run.py
-```
+### OpenAI
+| Model | Use Case |
+|-------|----------|
+| **GPT-4o Mini** | Fast, affordable |
+| **GPT-4o** | Best general-purpose |
+| **GPT-4 Turbo** | Advanced reasoning |
 
-### Web Interface Navigation
+### Google Gemini
+| Model | Use Case |
+|-------|----------|
+| **Gemini 2.0 Flash** | Fastest |
+| **Gemini 1.5 Flash** | Fast & capable |
+| **Gemini 1.5 Pro** | Most powerful |
 
-1. **Model Selection**: Choose and load an LLM model
-2. **Prompt Engineering**: Create and test prompts for insurance tasks
-3. **Evaluation**: Assess the quality of generated outputs
-4. **Benchmarks**: Run and compare model performance on benchmark datasets
-5. **Model Comparison**: Compare different models and configurations
-6. **Settings**: Configure application settings and view system information
+---
 
-
-### API Usage
-
-The framework components can be imported and used programmatically:
-
-```python
-from insurance_llm.models import ModelLoader
-from insurance_llm.prompts import PromptLibrary
-from insurance_llm.evaluation import EvaluationMetrics
-
-# Load a model
-model_loader = ModelLoader()
-model, tokenizer = model_loader.load_model("phi-2", quantization="8bit")
-
-# Get a prompt template
-prompt_library = PromptLibrary()
-template = prompt_library.get_template("policy_summary")
-
-# Generate text
-prompt = template.format(policy_text="Your policy text here...")
-inference = ModelInference(model, tokenizer)
-result = inference.generate(prompt, max_length=512)
-
-# Evaluate the result
-metrics = EvaluationMetrics()
-score = metrics.evaluate(result, reference_text="Reference summary")
-print(f"ROUGE-L score: {score['rouge-l']}")
-```
-
-## Project Structure
+## Application Structure
 
 ```
-insurance-llm-framework/
-├── app.py                      # Main Streamlit application
-├── run.py                      # Application startup script
-├── requirements.txt            # Project dependencies
-├── Dockerfile                  # Docker configuration
-├── .env                        # Environment variables (create this)
-├── config/                     # Configuration files
-│   ├── models.yaml             # Model configuration
-│   ├── prompts.yaml            # Prompt configuration
-│   └── evaluation.yaml         # Evaluation configuration
-├── data/                       # Sample insurance data
-│   ├── policies/               # Sample policy documents
-│   ├── claims/                 # Sample claim documents
-│   └── communications/         # Sample customer communications
-├── models/                     # Model integration
-│   ├── model_loader.py         # Classes for loading models
-│   ├── inference.py            # Classes for model inference
-│   └── cache/                  # Model cache directory
-├── prompts/                    # Prompt engineering components
-│   ├── templates/              # Reusable prompt templates
-│   ├── strategies.py           # Prompt design strategies
-│   └── library.py              # Prompt library manager
-├── evaluation/                 # Evaluation components
-│   ├── metrics.py              # Automated evaluation metrics
-│   ├── human_eval.py           # Human evaluation protocols
-│   ├── benchmarks.py           # Benchmark datasets and tests
-│   ├── evaluations/            # Evaluation results
-│   └── benchmarks/             # Benchmark datasets
-├── ui/                         # UI components
-│   ├── pages/                  # Different pages of the app
-│   ├── components/             # Reusable UI components
-│   └── utils.py                # UI utility functions
-├── utils/                      # Utility functions
-│   ├── logging.py              # Logging configuration
-│   ├── file_utils.py           # File handling utilities
-│   └── text_processing.py      # Text processing utilities
-├── tests/                      # Test suite
-│   ├── unit/                   # Unit tests
-│   ├── integration/            # Integration tests
-│   └── fixtures/               # Test fixtures
-└── docs/                       # Detailed documentation
-    ├── use_cases.md            # Insurance use cases
-    ├── prompt_engineering.md   # Prompt engineering guide
-    ├── evaluation.md           # Evaluation guide
-    ├── api_reference.md        # API documentation
-    └── examples/               # Example notebooks and scripts
+insuragents/
+├── app.py                          # Main Streamlit application
+├── run.py                          # Application entrypoint
+├── requirements.txt                # Dependencies
+├── .env.example                    # Environment template
+│
+├── models/                         # LLM provider integrations
+│   ├── base_inference.py           # Abstract base class
+│   ├── claude_inference.py         # Claude API wrapper
+│   ├── openai_inference.py         # OpenAI API wrapper
+│   ├── gemini_inference.py         # Google Gemini wrapper
+│   └── factory.py                  # Provider factory & model registry
+│
+├── prompts/                        # Prompt templates
+│   ├── library.py                  # Template manager
+│   ├── strategies.py               # Prompting strategies
+│   └── templates/                  # JSON prompt definitions
+│       └── claim_triage.json       # Claim triage template
+│
+├── evaluation/                     # Metrics and benchmarks
+│   ├── metrics.py                  # Evaluation metrics (ROUGE, BLEU, BERTScore, Triage Accuracy)
+│   ├── human_eval.py               # Human evaluation forms
+│   ├── benchmarks.py               # Benchmark dataset management
+│   ├── evaluations/                # Saved evaluation results
+│   └── benchmarks/                 # Benchmark datasets
+│       └── claim_triage_benchmark.json
+│
+├── data/                           # Sample insurance documents
+│   ├── policies/                   # Sample policy files
+│   ├── claims/                     # Sample claim files
+│   └── communications/             # Sample communications
+│
+└── utils/                          # Utilities
+    └── dataframe_utils.py          # Data formatting for Streamlit
 ```
 
-## Architecture
+---
+
+## How It Works
+
+### Architecture
+
+The application uses a **provider abstraction layer** to support multiple LLM backends:
+
+```
+┌──────────────────────┐
+│  Streamlit UI        │
+│  (app.py)            │
+└──────┬───────────────┘
+       │
+       ├─ Model Selection (choose provider + API key + model)
+       └─ Create inference engine via factory
+              │
+              ▼
+       ┌────────────────────┐
+       │ BaseInference      │  (abstract interface)
+       │ - generate()       │
+       │ - generate_with_  │
+       │   streaming()      │
+       └──────┬─────────────┘
+              │
+       ┌──────┴──────────┬─────────────┐
+       ▼                 ▼             ▼
+   ClaudeInference  OpenAIInference  GeminiInference
+   (anthropic)      (openai)         (google.generativeai)
+```
+
+All downstream components (`PromptEngineeringPage`, `EvaluationPage`, `BenchmarksPage`) call the standard interface, making provider swaps transparent to the rest of the application.
+
 ### Key Components
 
-#### Model Management
-- **ModelConfig**: Configuration for model repositories and settings
-- **ModelLoader**: Handles loading and configuring LLM models
-- **ModelInference**: Manages text generation with loaded models
-
-#### Prompt Engineering
-- **PromptTemplate**: Represents a single prompt template with variables
-- **PromptLibrary**: Manages a collection of prompt templates
-- **PromptStrategy**: Implements different prompting strategies
-
-#### Evaluation
-- **EvaluationMetric**: Base class for evaluation metrics
-- **MetricsManager**: Manages and applies multiple evaluation metrics
-- **HumanEvaluationManager**: Handles human evaluation workflows
-
-#### Benchmarking
-- **Benchmark**: Represents a benchmark dataset with examples
-- **BenchmarkManager**: Manages benchmark datasets and runs tests
-- **BenchmarkResult**: Stores and analyzes benchmark results
-
-#### UI Components
-- **ModelSelectionPage**: UI for selecting and loading models
-- **PromptEngineeringPage**: UI for creating and testing prompts
-- **EvaluationPage**: UI for evaluating generated outputs
-- **BenchmarksPage**: UI for running and viewing benchmarks
-
-#### Utilities
-- **TorchUtils**: Utilities for PyTorch operations
-- **SessionState**: Manages Streamlit session state
-- **DataLoader**: Handles loading sample data
-- **EnvironmentSetup**: Sets up the application environment
-
-### Class Hierarchy
-
-```
-ModelManagement
-├── ModelConfig
-├── ModelLoader
-├── PipelineFactory
-└── ModelInference
-
-PromptEngineering
-├── PromptTemplate
-├── PromptLibrary
-└── PromptStrategy
-    ├── ZeroShotStrategy
-    ├── FewShotStrategy
-    └── ChainOfThoughtStrategy
-
-Evaluation
-├── EvaluationMetric
-│   ├── ROUGEMetric
-│   ├── BLEUMetric
-│   ├── BERTScoreMetric
-│   └── CustomMetric
-├── MetricsManager
-└── HumanEvaluationManager
-
-Benchmarking
-├── Benchmark
-├── BenchmarkExample
-├── BenchmarkManager
-└── BenchmarkResult
-
-UI
-├── ModelSelectionPage
-├── PromptEngineeringPage
-├── EvaluationPage
-├── BenchmarksPage
-├── ModelComparisonPage
-└── SettingsPage
-
-Utilities
-├── TorchUtils
-├── SessionState
-├── DataLoader
-├── ThreadingUtils
-├── SystemInfo
-└── EnvironmentSetup
-```
-
-## Model Support
-
-The framework supports a variety of open-source LLMs with different capabilities and resource requirements:
-
-### Supported Models
-
-| Model | Parameters | Context Length | Best For | CPU Friendly |
-|-------|------------|---------------|----------|--------------|
-| LLaMA-2 7B | 7 billion | 4096 tokens | General text generation | No |
-| LLaMA-2 13B | 13 billion | 4096 tokens | Higher quality generation | No |
-| LLaMA-2 7B Chat | 7 billion | 4096 tokens | Conversational applications | No |
-| LLaMA-2 13B Chat | 13 billion | 4096 tokens | Higher quality conversations | No |
-| Mistral 7B | 7 billion | 8192 tokens | Long context generation | No |
-| Mistral 7B Instruct | 7 billion | 8192 tokens | Instruction following | No |
-| Falcon 7B | 7 billion | 2048 tokens | Efficient generation | No |
-| Falcon 7B Instruct | 7 billion | 2048 tokens | Instruction following | No |
-| Phi-2 | 2.7 billion | 2048 tokens | CPU-friendly generation | Yes |
-| Phi-1.5 | 1.3 billion | 2048 tokens | Lightweight inference | Yes |
-| TinyLLaMA 1.1B | 1.1 billion | 2048 tokens | Fast CPU inference | Yes |
-
-### Model Selection Guidelines
+**models/factory.py**
+- `PROVIDER_MODELS`: Nested dict of providers → models → model IDs
+- `create_inference_engine()`: Instantiates the correct inference class based on user selection
 
-- **For GPU environments**: 
-  - LLaMA-2 13B Chat or Mistral 7B Instruct provide the best quality
-  - Use 4-bit quantization to reduce VRAM requirements
-  
-- **For CPU environments**:
-  - Phi-2 offers the best balance of quality and speed
-  - TinyLLaMA 1.1B is the fastest option
-  - Avoid models larger than 7B parameters
+**models/{claude,openai,gemini}_inference.py**
+- Each implements `BaseInference` interface
+- `generate()`: Single generation request
+- `generate_with_streaming()`: Streaming generation with callback
 
-### Adding Custom Models
+**prompts/library.py**
+- `PromptLibrary`: Loads JSON templates from `prompts/templates/`
+- `PromptTemplate`: Variable substitution and formatting
+- `PromptStrategy`: Zero-shot, few-shot, chain-of-thought implementations
 
-The framework supports adding custom models by extending the `ModelConfig` class:
+**evaluation/metrics.py**
+- Automated metrics: ROUGE, BLEU, BERTScore
+- Domain-specific: `TriageAccuracyMetric` (compares APPROVE/DENY/ESCALATE decisions)
+- `MetricsManager`: Batch evaluation
 
-```python
-# Add a custom model to the configuration
-ModelConfig.MODEL_REPOS["custom-model"] = "path/to/custom/model"
-ModelConfig.MODEL_DETAILS["custom-model"] = {
-    "description": "Custom model description",
-    "parameters": "X billion",
-    "context_length": "Y tokens",
-    "suitable_for": "Specific tasks",
-    "cpu_friendly": False
-}
-```
+**evaluation/benchmarks.py**
+- `Benchmark`, `BenchmarkManager`: Load and run benchmark datasets
+- Example: `claim_triage_benchmark.json` with 15 realistic claim scenarios
 
-## CPU vs GPU Optimization
+---
 
-The framework includes extensive optimizations for both CPU and GPU environments:
+## Usage Workflows
 
-### GPU Optimizations
+### 1. Claim Triage (Default)
 
-- Automatic device mapping based on available GPU memory
-- Quantization options (4-bit, 8-bit) to reduce VRAM requirements
-- Batch processing for efficient multi-input generation
-- Memory management to prevent CUDA out-of-memory errors
+1. **Model Selection** → Choose provider, enter API key, select model → Connect
+2. **Prompt Engineering** → Load claim triage template → Paste policy + claim → Generate decision
+3. **Evaluation** → View decision (APPROVE/DENY/ESCALATE), reasoning, and confidence
+4. **Benchmarks** → Run triage against 15 benchmark claims → Compare model performance
 
-### CPU Optimizations
+### 2. Testing Multiple Providers
 
-- Special handling for CPU-friendly models (Phi-2, TinyLLaMA)
-- Automatic adjustment of generation parameters for better performance
-- Reduced token generation limits to prevent timeouts
-- Timeout management for long-running generations
-- Single-thread processing for limited CPU environments
+1. Go to **Model Selection**
+2. Switch between Claude, OpenAI, and Gemini
+3. Re-run the same prompt on each provider
+4. Compare outputs in **Model Comparison** page
 
-### Performance Comparison
+### 3. Prompt Refinement
 
-| Model | GPU (RTX 3090) | CPU (8 cores) | CPU (4 cores) |
-|-------|----------------|---------------|---------------|
-| LLaMA-2 13B | 15 tokens/sec | 0.5 tokens/sec | 0.2 tokens/sec |
-| LLaMA-2 7B | 30 tokens/sec | 1 token/sec | 0.5 tokens/sec |
-| Mistral 7B | 25 tokens/sec | 0.8 tokens/sec | 0.4 tokens/sec |
-| Phi-2 | 60 tokens/sec | 3 tokens/sec | 1.5 tokens/sec |
-| TinyLLaMA 1.1B | 100 tokens/sec | 5 tokens/sec | 2.5 tokens/sec |
+1. **Prompt Engineering** → Modify the prompt template (zero-shot, few-shot, CoT)
+2. Test against a few claims
+3. Run **Benchmarks** to measure average accuracy across all test cases
+4. Iterate on template until satisfied
 
-## Prompt Engineering
+---
 
-The framework provides comprehensive prompt engineering capabilities for insurance domain tasks:
+## Sample Data
 
-### Prompt Templates
+The application includes three sample documents:
 
-Prompt templates are structured with variables that can be substituted at runtime:
+- `data/policies/sample_auto_policy.txt` — Auto insurance policy
+- `data/claims/sample_auto_claim.txt` — Claim for collision damage
+- `data/communications/sample_customer_inquiry.txt` — Customer service inquiry
 
-```
-Template: policy_summary
-Task: Summarize the key points of an insurance policy
-Variables: policy_text
-Strategy: zero_shot
+Reference these when testing prompts, or upload your own documents.
 
-I need to understand the key points of this insurance policy. Please provide a concise summary that includes:
-1. Coverage limits
-2. Major exclusions
-3. Deductible amounts
-4. Important conditions
-
-Policy text:
-{policy_text}
-
-Summary:
-```
-
-### Prompt Strategies
-
-The framework supports multiple prompting strategies:
-
-- **Zero-Shot**: Direct prompting without examples
-- **Few-Shot**: Including examples in the prompt
-- **Chain-of-Thought**: Breaking down complex reasoning
-- **ReAct**: Reasoning and acting iteratively
-
-### Domain-Specific Templates
-
-The framework includes templates for common insurance tasks:
-
-- Policy summarization
-- Claim response generation
-- Risk assessment
-- Customer inquiry handling
-- Compliance checking
-- Underwriting assistance
-
-### Creating Custom Templates
-
-Custom templates can be created through the UI or programmatically:
-
-```python
-from prompts.library import PromptTemplate, PromptLibrary
-
-# Create a new template
-template = PromptTemplate(
-    name="custom_template",
-    template="This is a template with {variable1} and {variable2}",
-    task_type="custom_task",
-    description="A custom template for specific tasks",
-    variables=["variable1", "variable2"],
-    strategy_type="zero_shot"
-)
-
-# Add to library
-library = PromptLibrary()
-library.add_template(template)
-```
-
-## Evaluation Framework
-
-The framework provides comprehensive evaluation capabilities for assessing the quality of generated outputs:
-
-### Automated Metrics
-
-- **ROUGE**: Measures overlap between generated and reference texts
-- **BLEU**: Evaluates translation quality
-- **BERTScore**: Semantic similarity using BERT embeddings
-- **Custom metrics**: Domain-specific metrics for insurance tasks
-
-### Human Evaluation
-
-- Customizable evaluation forms
-- Multi-criteria assessment
-- Inter-annotator agreement calculation
-- Qualitative feedback collection
-
-### Evaluation Workflow
-
-1. Generate outputs using different models/prompts
-2. Apply automated metrics for initial assessment
-3. Conduct human evaluation for qualitative assessment
-4. Analyze results and identify improvement areas
-
-### Custom Evaluation Metrics
-
-Custom metrics can be added by extending the `EvaluationMetric` class:
-
-```python
-from evaluation.metrics import EvaluationMetric, EvaluationResult
-
-class InsuranceAccuracyMetric(EvaluationMetric):
-    def __init__(self):
-        super().__init__(
-            name="insurance_accuracy",
-            description="Measures accuracy of insurance-specific information",
-            max_score=1.0
-        )
-    
-    def evaluate(self, generated_text, reference_text, context=None):
-        # Implement custom evaluation logic
-        score = calculate_accuracy(generated_text, reference_text)
-        
-        return EvaluationResult(
-            metric_name=self.name,
-            score=score,
-            max_score=self.max_score,
-            details={"analysis": "Custom analysis details"}
-        )
-```
-
-## Benchmarking
-
-The framework includes a comprehensive benchmarking system for comparing model performance:
-
-### Benchmark Datasets
-
-- **Policy Summary**: Benchmark for policy summarization tasks
-- **Claim Response**: Benchmark for generating claim responses
-- **Customer Inquiry**: Benchmark for handling customer inquiries
-- **Risk Assessment**: Benchmark for risk assessment tasks
-
-### Benchmark Structure
-
-Each benchmark consists of:
-- Input examples
-- Reference outputs
-- Evaluation metrics
-- Task-specific parameters
-
-### Running Benchmarks
-
-Benchmarks can be run through the UI or programmatically:
-
-```python
-from evaluation.benchmarks import BenchmarkManager
-
-# Get benchmark manager
-benchmark_manager = BenchmarkManager()
-
-# Run benchmark
-results = benchmark_manager.run_benchmark(
-    benchmark_name="policy_summary",
-    model=model,
-    tokenizer=tokenizer,
-    inference_engine=inference_engine
-)
-
-# Analyze results
-average_score = results.get_average_score()
-per_example_scores = results.get_per_example_scores()
-```
-
-### Comparing Models
-
-The framework provides tools for comparing different models on the same benchmarks:
-
-- Side-by-side output comparison
-- Metric comparison charts
-- Statistical significance testing
-- Performance vs. resource usage analysis
+---
 
 ## Extending the Framework
 
-The framework is designed to be extensible in various ways:
+### Adding a New LLM Provider
 
-### Adding New Models
+1. Create `models/my_provider_inference.py`:
+   ```python
+   from models.base_inference import BaseInference, SYSTEM_MESSAGE
+   
+   class MyProviderInference(BaseInference):
+       def __init__(self, api_key: str, model_id: str):
+           self.client = MyProvider(api_key=api_key)
+           self.model_id = model_id
+       
+       def generate(self, prompt, max_length=1024, temperature=0.7, **kwargs):
+           # Implement generation
+           response = self.client.complete(prompt=prompt, ...)
+           return [response.text]
+       
+       def generate_with_streaming(self, prompt, callback, **kwargs):
+           # Implement streaming
+           full_text = ""
+           for chunk in self.client.stream(prompt=prompt, ...):
+               callback(chunk)
+               full_text += chunk
+           return full_text
+   ```
 
-1. Update `ModelConfig.MODEL_REPOS` with the new model repository
-2. Add model details to `ModelConfig.MODEL_DETAILS`
-3. Implement any special handling in `ModelLoader.load_model`
+2. Update `models/factory.py`:
+   ```python
+   PROVIDER_MODELS["MyProvider"] = {
+       "Model A": "model-a-id",
+       "Model B": "model-b-id",
+   }
+   
+   def create_inference_engine(provider, api_key, model_id):
+       # ... existing code ...
+       elif provider == "MyProvider":
+           from models.my_provider_inference import MyProviderInference
+           return MyProviderInference(api_key, model_id)
+   ```
 
-### Adding New Prompt Templates
+3. Update `.env.example` with the new API key variable.
 
-1. Create a new template file in `prompts/templates/`
-2. Register the template in the `PromptLibrary`
-3. Implement any special handling in `PromptStrategy`
+### Adding a Custom Evaluation Metric
 
-### Adding New Evaluation Metrics
+1. Create a metric class in `evaluation/metrics.py`:
+   ```python
+   class MyMetric(EvaluationMetric):
+       def __init__(self):
+           super().__init__(
+               name="my_metric",
+               description="My custom metric",
+               max_score=1.0
+           )
+       
+       def evaluate(self, generated_text, reference_text, context=None):
+           score = my_scoring_logic(generated_text, reference_text)
+           return EvaluationResult(
+               metric_name=self.name,
+               score=score,
+               max_score=self.max_score,
+               details={"analysis": "..."}
+           )
+   ```
 
-1. Create a new class extending `EvaluationMetric`
-2. Implement the `evaluate` method
-3. Register the metric in the `MetricsManager`
+2. Register it in `EvaluationMetrics._register_default_metrics()`:
+   ```python
+   self.register_metric(MyMetric())
+   ```
 
-### Adding New Benchmarks
-
-1. Create benchmark examples in `evaluation/benchmarks/`
-2. Implement a benchmark class extending `Benchmark`
-3. Register the benchmark in the `BenchmarkManager`
-
-### Adding New UI Components
-
-1. Create a new page class in `ui/pages/`
-2. Implement the `render` method
-3. Register the page in the main application
+---
 
 ## Troubleshooting
 
-### Common Issues and Solutions
+### "API Key not found" error
 
-#### Model Loading Issues
+Ensure your `.env` file exists and contains the correct key for your chosen provider:
+- `ANTHROPIC_API_KEY` for Claude
+- `OPENAI_API_KEY` for OpenAI
+- `GOOGLE_API_KEY` for Gemini
 
-- **Problem**: "CUDA out of memory" error
-  - **Solution**: Use a smaller model or increase quantization (4-bit)
+### "Rate limit exceeded" error
 
-- **Problem**: Model loading is extremely slow on CPU
-  - **Solution**: Use a CPU-friendly model like Phi-2 or TinyLLaMA
+You've hit the provider's rate limit. Wait a few moments and retry, or consider upgrading your API plan.
 
-- **Problem**: "Token not found" error when loading gated models
-  - **Solution**: Ensure your HF_TOKEN is correctly set in the .env file
+### Generation is slow or times out
 
-#### Generation Issues
+Try a **faster** model:
+- Claude Haiku instead of Opus
+- GPT-4o Mini instead of GPT-4 Turbo
+- Gemini Flash instead of Gemini Pro
 
-- **Problem**: Generation times out
-  - **Solution**: Reduce max_tokens, use a smaller model, or increase timeout
+Reduce `max_tokens` in the prompt engineering page.
 
-- **Problem**: Poor quality outputs
-  - **Solution**: Try a different prompt template or a larger model
+### Model comparison page is empty
 
-- **Problem**: Memory usage grows with each generation
-  - **Solution**: Restart the application or use `TorchUtils.clear_gpu_memory()`
+Ensure you've generated outputs on the **Prompt Engineering** page first. Model comparison requires saved outputs.
 
-#### UI Issues
+### Debug logs
 
-- **Problem**: Streamlit crashes during model loading
-  - **Solution**: Ensure STREAMLIT_WATCHDOG_DISABLE=1 is set
-
-- **Problem**: UI becomes unresponsive during generation
-  - **Solution**: Use streaming generation or reduce the generation parameters
-
-### Logging and Debugging
-
-The framework uses Python's logging module for debugging:
-
+Enable debug logging to see detailed request/response logs:
 ```bash
-# Run with debug logging
 LOG_LEVEL=DEBUG python run.py
-
-# Check log files
-cat app.log  # Application logs
-cat run.log  # Startup logs
 ```
 
-## Contributing
+Logs are written to `run.log` and `app.log`.
 
-Contributions to the Insurance LLM Framework are welcome! Here's how you can contribute:
+---
 
-### Development Setup
+## Project Philosophy
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/insurance-llm-framework.git
-cd insurance-llm-framework
+This portfolio project demonstrates:
 
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate
+- **Multi-provider abstraction**: Clean factory pattern supporting Claude, OpenAI, and Gemini without downstream coupling
+- **Domain-specific application**: Real-world insurance use case (claim triage) with structured evaluation metrics
+- **Minimal infrastructure**: API-based, no local models, no GPU requirements—runs on any machine with internet
+- **Extensibility**: Easy to add new providers, prompt templates, or evaluation metrics
+- **Production-readiness**: Logging, error handling, streaming support, session state management
 
-# Install development dependencies
-pip install -r requirements-dev.txt
+---
 
-# Run tests
-pytest
-```
+## Testing
 
-### Contribution Guidelines
+The application includes:
+- `evaluation/benchmarks/claim_triage_benchmark.json` — 15 test claims with expected outcomes
+- `TriageAccuracyMetric` — Evaluates whether model decisions match expected verdicts
+- **Benchmarks page** — Run full benchmark suite and compare providers
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`pytest`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+No formal test suite is present; validation is done via the interactive dashboard and benchmark runs.
 
+---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see LICENSE file for details.
 
-## Acknowledgements
+---
 
-- The HuggingFace team for their transformers library
-- The Streamlit team for their amazing UI framework
-- The open-source LLM community for making powerful models accessible
-- All contributors to this project 
+## Author
+
+Built as a portfolio project exploring LLM integration, prompt engineering, and multi-provider abstraction.
+
+**Repository**: [github.com/lukewarmrebel/insuragents](https://github.com/lukewarmrebel/insuragents)
