@@ -10,7 +10,7 @@
 
 ## What is this?
 
-Insurance AI Agents is a full-stack AI application that brings LLM intelligence to insurance claim processing. It reads a policy document and a claim, then decides: **APPROVE, DENY, or ESCALATE** — with structured reasoning explaining every decision.
+Insurance AI Agents is a full-stack AI application that automates insurance workflows using large language models. It covers 7 distinct insurance operations — from triaging claims and summarizing policies to detecting fraud and checking regulatory compliance — all driven by the same prompt-engineering and evaluation framework.
 
 The system is provider-agnostic. You plug in Claude, GPT-4, or Gemini, and the application routes to the right API automatically. Swap models without touching a single line of code downstream.
 
@@ -20,9 +20,72 @@ Built as a portfolio project at the intersection of insurance operations and mod
 
 ## Why this project exists
 
-Insurance claims teams deal with high volumes of repetitive decisions. A claim comes in, an adjuster checks the policy, evaluates coverage, flags red flags, and makes a call. This project explores how LLMs can assist that workflow — not replace the adjuster, but give them a structured first-pass analysis to act on.
+Insurance operations involve high volumes of structured but judgment-intensive work: a claim comes in, an adjuster checks coverage, flags red flags, drafts a response letter, and files it. A customer writes in confused about their policy. An underwriter needs a risk summary before renewal. These workflows are repetitive, well-defined, and exactly where LLMs add value as a first-pass assistant.
 
-The technical problem is interesting too: different LLM providers have different APIs, different strengths, and different costs. This app solves that with a clean abstraction layer so you can benchmark them against each other on real insurance tasks.
+The technical problem is interesting too: different LLM providers have different APIs, strengths, and costs. This app solves that with a clean abstraction layer so you can benchmark them against each other on the same tasks.
+
+---
+
+## Insurance Workflows
+
+The app ships with 7 pre-built workflows, each with its own prompt template and sample inputs.
+
+### 1. Claim Triage
+**The core decision workflow.** Given a policy and a claim, the model recommends APPROVE, DENY, or ESCALATE with structured reasoning.
+
+Output format:
+```
+DECISION: APPROVE | DENY | ESCALATE
+REASONING:
+  - Coverage: is the loss type covered?
+  - Policy status: active / lapsed / excluded driver?
+  - Documentation: sufficient / insufficient?
+  - Red flags: fraud indicators or ambiguities?
+SUMMARY: plain-language explanation
+```
+
+---
+
+### 2. Fraud Detection
+**Flag suspicious claims before they reach a human adjuster.** Analyzes timing patterns, inconsistencies in the claim narrative, missing documentation, and financial motive to assign a fraud risk score.
+
+Output format:
+```
+FRAUD RISK: LOW | MEDIUM | HIGH
+INDICATORS:
+  - Timing, claimant history, inconsistencies, documentation, financial motive
+RECOMMENDED ACTION: PROCEED_NORMALLY | FLAG_FOR_REVIEW | REFER_TO_SIU
+SUMMARY: plain-language risk explanation
+```
+
+---
+
+### 3. Policy Summary
+**Make dense policy documents readable.** Given a full policy document, the model extracts and summarizes coverage limits, deductibles, exclusions, and key conditions in plain language.
+
+Useful for customer-facing explainers, onboarding materials, or internal quick-reference sheets.
+
+---
+
+### 4. Customer Communication
+**Draft professional responses to customer inquiries.** Handles questions about coverage, claims status, billing, and policy changes. Addresses all aspects of the inquiry with specific policy details and actionable next steps.
+
+Maintains an empathetic, professional tone appropriate for policyholder-facing communication.
+
+---
+
+### 5. Risk Assessment
+**Structured risk analysis for underwriting and renewal decisions.** Given property or applicant details, generates a full report covering identified risks by category, likelihood and impact scores, mitigation strategies, and recommendations.
+
+---
+
+### 6. Compliance Check
+**Catch regulatory issues before they become violations.** Analyzes insurance documents — cancellation notices, denial letters, policy language — against specified jurisdiction requirements. Flags non-compliant language and suggests remediation.
+
+---
+
+### 7. Policy Comparison
+**Side-by-side policy analysis.** Compares two policies across coverage areas, limits, exclusions, premiums, and conditions. Surfaces key differences and highlights advantages and disadvantages of each — useful for renewal negotiations or competitive analysis.
 
 ---
 
@@ -31,14 +94,8 @@ The technical problem is interesting too: different LLM providers have different
 ### Multi-Provider LLM Support
 Connect to **Claude (Anthropic)**, **GPT-4 (OpenAI)**, or **Gemini (Google)** from a single UI. Each provider is wrapped behind a common interface — the rest of the app doesn't know or care which one is active. Switching providers takes seconds.
 
-### Structured Claim Triage
-The core use case: given a policy document and claim description, the model returns:
-- **DECISION** — APPROVE, DENY, or ESCALATE
-- **REASONING** — coverage analysis, policy status check, documentation review, red flags
-- **SUMMARY** — a concise explanation suitable for the claims file
-
 ### Prompt Engineering Studio
-Test and refine prompts interactively. Choose between zero-shot, few-shot, and chain-of-thought strategies. See streaming output in real time. Save outputs and compare across runs.
+Test and refine prompts interactively across all 7 workflows. Choose between zero-shot, few-shot, and chain-of-thought strategies. See streaming output in real time. Save outputs and compare across runs.
 
 ### Evaluation & Benchmarking
 - **Automated metrics**: ROUGE, BLEU, BERTScore for text quality
@@ -46,7 +103,7 @@ Test and refine prompts interactively. Choose between zero-shot, few-shot, and c
 - **15-claim benchmark suite** with realistic auto and homeowner scenarios, each with expected decisions and required phrases
 
 ### Model Comparison
-Run the same claim through multiple providers and compare outputs side by side. Useful for evaluating which model handles edge cases best or fits your cost constraints.
+Run the same workflow through multiple providers and compare outputs side by side. Useful for evaluating which model handles edge cases best or fits your cost constraints.
 
 ---
 
@@ -112,23 +169,34 @@ Opens at **http://localhost:8501**
 ## How to Use
 
 ### Step 1 — Connect a Model
-Go to the **Model Selection** page. Pick a provider (Claude / OpenAI / Gemini), paste your API key, choose a model, and click **Connect**. The key stays in your session and is never stored.
+Go to **Model Selection**. Pick a provider (Claude / OpenAI / Gemini), paste your API key, choose a model, and click **Connect**. The key stays in your session only.
 
-### Step 2 — Triage a Claim
-Go to **Prompt Engineering**. The claim triage template is pre-loaded. Paste in:
-- A **policy document** (use the sample auto policy to get started)
-- A **claim description** (what happened, what's being claimed)
+### Step 2 — Choose a Workflow
+Go to **Prompt Engineering**. Use the **Task Type** dropdown to pick a workflow:
 
-Click **Generate**. The model streams back a structured APPROVE/DENY/ESCALATE decision with full reasoning.
+| Task Type | Template | What you paste in |
+|-----------|----------|-------------------|
+| `claim_triage` | Claim Triage | policy document + claim description |
+| `fraud_detection` | Fraud Detection | policy document + claim description |
+| `policy_summary` | Policy Summary Concise | policy document |
+| `customer_communication` | Customer Inquiry Detailed | customer inquiry + policy details |
+| `risk_assessment` | Risk Assessment Detailed | risk info + assessment scope |
+| `compliance_check` | Compliance Check | document text + jurisdiction/regulations |
+| `policy_comparison` | Policy Comparison | policy 1 text + policy 2 text |
 
-### Step 3 — Evaluate the Output
+Each workflow has sample inputs built in — click **Load Sample** to populate the fields and run immediately.
+
+### Step 3 — Generate & Review
+Click **Generate**. The model streams back structured output in real time. Each workflow returns a different format — triage gives APPROVE/DENY/ESCALATE, fraud detection gives a risk score and recommended action, risk assessment gives a full report, and so on.
+
+### Step 4 — Evaluate
 Go to **Evaluation**. Score the output against automated metrics (ROUGE, BLEU, BERTScore) or submit a human evaluation with custom criteria.
 
-### Step 4 — Run the Benchmark
-Go to **Benchmarks**. Run the full 15-claim test suite against your connected model. See aggregate accuracy, per-claim decisions, and compare against expected outcomes.
+### Step 5 — Benchmark
+Go to **Benchmarks**. Run the 15-claim test suite against your connected model to measure aggregate accuracy and compare expected vs. actual decisions.
 
-### Step 5 — Compare Providers (Optional)
-Reconnect with a different provider and re-run the same claim or benchmark. Go to **Model Comparison** to review outputs side by side.
+### Step 6 — Compare Providers (Optional)
+Reconnect with a different provider and re-run the same workflow. Go to **Model Comparison** to review outputs side by side — useful for picking the right model for a given task.
 
 ---
 

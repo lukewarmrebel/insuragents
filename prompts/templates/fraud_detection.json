@@ -1,0 +1,16 @@
+{
+  "name": "fraud_detection",
+  "task_type": "fraud_detection",
+  "description": "Analyze a claim for indicators of potential fraud or misrepresentation",
+  "variables": ["claim_text", "policy_text"],
+  "strategy_type": "zero_shot",
+  "template": "You are an experienced insurance fraud investigator. Review the claim and policy details below and assess the likelihood of fraud or misrepresentation.\n\nCLAIM:\n{claim_text}\n\nPOLICY DETAILS:\n{policy_text}\n\nProvide your analysis in this exact format:\n\nFRAUD RISK: [LOW|MEDIUM|HIGH]\n\nINDICATORS:\n- Timing: [any suspicious timing patterns?]\n- Claimant history: [patterns worth noting?]\n- Inconsistencies: [any contradictions in the claim narrative?]\n- Documentation: [missing, altered, or suspicious documents?]\n- Financial motive: [unusual financial circumstances?]\n\nRECOMMENDED ACTION: [PROCEED_NORMALLY|FLAG_FOR_REVIEW|REFER_TO_SIU]\n\nSUMMARY: [2-3 sentence plain-language explanation of the risk assessment and recommended next step]",
+  "metadata": {
+    "recommended_models": ["claude-opus-4-7", "claude-sonnet-4-6"],
+    "example_input": {
+      "claim_text": "Claim CL-99887766: Policyholder reports vehicle stolen from hotel parking lot during a business trip. Claims the vehicle contained $15,000 in laptop equipment and tools. Policy taken out 3 weeks ago. No police report filed yet. Claimant is 2 months behind on premium payments.",
+      "policy_text": "Auto Policy AP-55443322. Policyholder: Robert Davis. Vehicle: 2019 Ford F-150. Comprehensive coverage: $1,000 deductible. Policy start date: 3 weeks ago. Payment status: 2 months overdue. No prior claims on record."
+    },
+    "creation_date": "2024-05-22"
+  }
+}
