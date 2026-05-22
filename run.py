@@ -9,7 +9,6 @@ import os
 import sys
 import logging
 import argparse
-import subprocess
 from pathlib import Path
 from typing import Optional, List
 from dotenv import load_dotenv
@@ -43,6 +42,7 @@ class EnvironmentSetup:
     def set_environment_variables() -> None:
         """Set necessary environment variables if not already set."""
         os.environ["STREAMLIT_WATCHDOG_DISABLE"] = "1"
+        os.environ["STREAMLIT_CLIENT_GATHERUSAGESTATS"] = "false"
         logger.info("Disabled Streamlit watchdog")
 
     @staticmethod
@@ -97,15 +97,18 @@ class ApplicationRunner:
         port_str = str(port) if port else os.environ.get("APP_PORT", "8501")
         host_str = host if host else os.environ.get("APP_HOST", "0.0.0.0")
 
-        cmd = [
-            "streamlit", "run", "app.py",
-            "--server.port", port_str,
-            "--server.address", host_str
-        ]
-
         logger.info(f"Starting application on {host_str}:{port_str}")
+
         try:
-            subprocess.run(cmd)
+            import streamlit.web.cli as stcli
+            sys.argv = [
+                "streamlit",
+                "run", "app.py",
+                "--server.port", port_str,
+                "--server.address", host_str,
+                "--logger.level=info"
+            ]
+            stcli.main()
         except KeyboardInterrupt:
             logger.info("Application stopped by user")
         except Exception as e:
