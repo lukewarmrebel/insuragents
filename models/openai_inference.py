@@ -1,13 +1,12 @@
 """
-Claude API inference module for the Insurance LLM Framework.
+OpenAI API inference module for the Insurance LLM Framework.
 
-This module provides utilities for generating text with Claude models via the Anthropic API.
+This module provides utilities for generating text with OpenAI models via the OpenAI SDK.
 """
 
 import logging
 from typing import List, Optional, Callable
 
-import anthropic
 from models.base_inference import BaseInference, SYSTEM_MESSAGE
 
 logging.basicConfig(
@@ -17,20 +16,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class ClaudeInference(BaseInference):
-    """Wrapper for Claude API text generation."""
+class OpenAIInference(BaseInference):
+    """Wrapper for OpenAI API text generation."""
 
-    def __init__(self, client: anthropic.Anthropic, model_id: str):
+    def __init__(self, api_key: str, model_id: str):
         """
-        Initialize Claude inference engine.
+        Initialize OpenAI inference engine.
 
         Args:
-            client: Anthropic API client
-            model_id: Claude model identifier (e.g., "claude-haiku-4-5-20251001")
+            api_key: OpenAI API key
+            model_id: OpenAI model identifier (e.g., "gpt-4o-mini", "gpt-4o")
         """
-        self.client = client
+        import openai
+        self.client = openai.OpenAI(api_key=api_key)
         self.model_id = model_id
-        logger.info(f"Initialized ClaudeInference with model: {model_id}")
+        logger.info(f"Initialized OpenAIInference with model: {model_id}")
 
     def generate(
         self,
@@ -46,37 +46,40 @@ class ClaudeInference(BaseInference):
         **kwargs
     ) -> List[str]:
         """
-        Generate text using Claude API.
+        Generate text using OpenAI API.
 
         Args:
             prompt: Input prompt text
             max_length: Maximum output length in tokens
             temperature: Sampling temperature (0-2)
             top_p: Nucleus sampling parameter
-            top_k: Top-k sampling parameter (unused by Claude, kept for compatibility)
-            num_return_sequences: Number of sequences to generate (Claude always returns 1)
-            do_sample: Whether to use sampling (ignored by Claude)
+            top_k: Top-k sampling parameter (unused by OpenAI)
+            num_return_sequences: Number of sequences to generate
+            do_sample: Whether to use sampling (unused by OpenAI)
             stop_sequences: Sequences that stop generation
-            timeout_seconds: Request timeout (unused, kept for compatibility)
+            timeout_seconds: Request timeout (unused by OpenAI)
             **kwargs: Additional parameters (unused)
 
         Returns:
             List containing the generated text
         """
         try:
-            response = self.client.messages.create(
+            response = self.client.chat.completions.create(
                 model=self.model_id,
+                messages=[
+                    {"role": "system", "content": SYSTEM_MESSAGE},
+                    {"role": "user", "content": prompt}
+                ],
                 max_tokens=max_length,
-                system=self.SYSTEM_MESSAGE,
-                messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
-                stop_sequences=stop_sequences or [],
+                top_p=top_p,
+                stop=stop_sequences or None,
             )
-            text = response.content[0].text
+            text = response.choices[0].message.content
             logger.info(f"Generated text with {len(text.split())} words")
             return [text]
-        except anthropic.APIError as e:
-            logger.error(f"Claude API error: {str(e)}")
+        except Exception as e:
+            logger.error(f"OpenAI API error: {str(e)}")
             raise
 
     def generate_with_streaming(
@@ -93,7 +96,7 @@ class ClaudeInference(BaseInference):
         **kwargs
     ) -> str:
         """
-        Generate text using Claude API with streaming callback.
+        Generate text using OpenAI API with streaming callback.
 
         Args:
             prompt: Input prompt text
@@ -101,10 +104,10 @@ class ClaudeInference(BaseInference):
             max_length: Maximum output length in tokens
             temperature: Sampling temperature (0-2)
             top_p: Nucleus sampling parameter
-            top_k: Top-k sampling parameter (unused by Claude)
-            do_sample: Whether to use sampling (ignored by Claude)
+            top_k: Top-k sampling parameter (unused by OpenAI)
+            do_sample: Whether to use sampling (unused by OpenAI)
             stop_sequences: Sequences that stop generation
-            timeout_seconds: Request timeout (unused)
+            timeout_seconds: Request timeout (unused by OpenAI)
             **kwargs: Additional parameters (unused)
 
         Returns:
@@ -112,20 +115,26 @@ class ClaudeInference(BaseInference):
         """
         try:
             full_text = ""
-            with self.client.messages.stream(
+            with self.client.chat.completions.create(
                 model=self.model_id,
+                messages=[
+                    {"role": "system", "content": SYSTEM_MESSAGE},
+                    {"role": "user", "content": prompt}
+                ],
                 max_tokens=max_length,
-                system=self.SYSTEM_MESSAGE,
-                messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
-                stop_sequences=stop_sequences or [],
+                top_p=top_p,
+                stop=stop_sequences or None,
+                stream=True,
             ) as stream:
-                for text in stream.text_stream:
-                    callback(text)
-                    full_text += text
+                for chunk in stream:
+                    delta = chunk.choices[0].delta.content
+                    if delta:
+                        callback(delta)
+                        full_text += delta
 
             logger.info(f"Generated streaming text with {len(full_text.split())} words")
             return full_text
-        except anthropic.APIError as e:
-            logger.error(f"Claude API streaming error: {str(e)}")
+        except Exception as e:
+            logger.error(f"OpenAI API streaming error: {str(e)}")
             raise

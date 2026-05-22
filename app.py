@@ -16,9 +16,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import anthropic
 
-from models.claude_inference import ClaudeInference
+from models.factory import PROVIDER_MODELS, create_inference_engine
 from prompts.library import get_prompt_library, PromptTemplate
 from prompts.strategies import create_prompt_strategy
 from evaluation.metrics import get_metrics_manager
@@ -102,7 +101,13 @@ class DataLoader:
             return f"Error loading sample data: {str(e)}"
 
 class ModelSelectionPage:
-    """Class to handle Claude API configuration."""
+    """Class to handle multi-provider LLM configuration."""
+
+    API_KEY_ENV = {
+        "Claude": "ANTHROPIC_API_KEY",
+        "OpenAI": "OPENAI_API_KEY",
+        "Gemini": "GOOGLE_API_KEY",
+    }
 
     def _display_system_info(self):
         """Display system information."""
@@ -120,6 +125,7 @@ class ModelSelectionPage:
         }
 
         if st.session_state.model is not None:
+            system_info["Provider"] = st.session_state.get("provider", "Unknown")
             system_info["Selected Model"] = st.session_state.get("model_id", "Unknown")
 
         system_df = pd.DataFrame(
@@ -129,75 +135,82 @@ class ModelSelectionPage:
         system_df = prepare_dataframe_for_display(system_df)
         st.table(system_df)
 
-    def _connect_to_claude(self, api_key: str, model_id: str):
-        """Connect to Claude API."""
+    def _connect(self, provider: str, api_key: str, model_id: str):
+        """Connect to selected LLM provider."""
         try:
-            client = anthropic.Anthropic(api_key=api_key)
-            st.session_state.model = client
+            engine = create_inference_engine(provider, api_key, model_id)
+            st.session_state.model = engine
             st.session_state.tokenizer = None
-            st.session_state.inference_engine = ClaudeInference(client, model_id)
+            st.session_state.inference_engine = engine
             st.session_state.model_id = model_id
+            st.session_state.provider = provider
             st.session_state.is_cpu_optimized = False
 
-            st.success(f"Connected to Claude API with {model_id}!")
+            st.success(f"Connected to {provider} with {model_id}!")
             SessionState.set_tab("prompt_engineering")
             st.rerun()
-        except anthropic.APIError as e:
-            st.error(f"Failed to connect to Claude API: {str(e)}")
-            logger.error(f"Claude API error: {str(e)}")
+        except Exception as e:
+            st.error(f"Failed to connect to {provider}: {str(e)}")
+            logger.error(f"{provider} API error: {str(e)}")
 
     def render(self):
-        """Render the Claude API configuration page."""
-        st.title("🤖 Claude API Configuration")
+        """Render the multi-provider LLM configuration page."""
+        st.title("🤖 Insurance AI - Multi-Provider LLM Selection")
 
-        with st.expander("About Claude for Insurance", expanded=False):
+        with st.expander("About Multi-Provider Support", expanded=False):
             st.markdown("""
-            This application uses Claude API to power insurance domain tasks.
+            This application supports multiple LLM providers:
 
-            **Why Claude?**
-            - No local model loading required — works on any machine
-            - Powerful reasoning for complex insurance decisions
-            - Fast responses with minimal latency
-            - Built-in safety guidelines aligned with insurance workflows
+            **Claude (Anthropic)**
+            - No local model loading — works on any machine
+            - Excellent reasoning for complex insurance decisions
+            - Best for detailed policy analysis
 
-            **Supported Models:**
-            - **Haiku 4.5**: Fast and cost-effective, good for routine triage
-            - **Sonnet 4.6**: Balanced performance and cost for complex reasoning
-            - **Opus 4.7**: Most capable, best for nuanced policy analysis
+            **GPT (OpenAI)**
+            - Strong general-purpose reasoning
+            - Wide deployment experience in enterprises
+            - Good balance of cost and capability
+
+            **Gemini (Google)**
+            - Large context windows for long documents
+            - Strong multimodal capabilities
+            - Competitive pricing
             """)
 
         col1, col2 = st.columns([2, 1])
 
         with col1:
-            st.subheader("API Configuration")
+            st.subheader("LLM Provider Configuration")
 
-            api_key = st.text_input(
-                "Anthropic API Key",
-                value=os.environ.get("ANTHROPIC_API_KEY", ""),
-                type="password",
-                help="Get your API key from https://console.anthropic.com"
+            provider = st.selectbox(
+                "Select Provider",
+                list(PROVIDER_MODELS.keys()),
+                index=0,
+                help="Choose your preferred LLM provider"
             )
 
-            model_options = {
-                "Haiku 4.5 (Fast & Cheap)": "claude-haiku-4-5-20251001",
-                "Sonnet 4.6 (Balanced)": "claude-sonnet-4-6",
-                "Opus 4.7 (Most Capable)": "claude-opus-4-7"
-            }
-
+            model_options = PROVIDER_MODELS[provider]
             selected_model_label = st.selectbox(
                 "Select Model",
                 list(model_options.keys()),
-                index=0,
                 help="Choose based on your speed/quality/cost preferences"
             )
             selected_model = model_options[selected_model_label]
 
-            if st.button("Connect to Claude"):
+            env_var_name = self.API_KEY_ENV[provider]
+            api_key = st.text_input(
+                f"{provider} API Key",
+                value=os.environ.get(env_var_name, ""),
+                type="password",
+                help=f"Get your API key from the {provider} console"
+            )
+
+            if st.button("Connect to LLM"):
                 if not api_key:
-                    st.error("Please enter an Anthropic API key")
+                    st.error(f"Please enter your {provider} API key")
                 else:
-                    with st.spinner(f"Connecting to {selected_model}..."):
-                        self._connect_to_claude(api_key, selected_model)
+                    with st.spinner(f"Connecting to {provider}..."):
+                        self._connect(provider, api_key, selected_model)
 
         with col2:
             self._display_system_info()

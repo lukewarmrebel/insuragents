@@ -1,13 +1,12 @@
 """
-Claude API inference module for the Insurance LLM Framework.
+Google Gemini API inference module for the Insurance LLM Framework.
 
-This module provides utilities for generating text with Claude models via the Anthropic API.
+This module provides utilities for generating text with Google Gemini models via the Generative AI SDK.
 """
 
 import logging
 from typing import List, Optional, Callable
 
-import anthropic
 from models.base_inference import BaseInference, SYSTEM_MESSAGE
 
 logging.basicConfig(
@@ -17,20 +16,25 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class ClaudeInference(BaseInference):
-    """Wrapper for Claude API text generation."""
+class GeminiInference(BaseInference):
+    """Wrapper for Google Gemini API text generation."""
 
-    def __init__(self, client: anthropic.Anthropic, model_id: str):
+    def __init__(self, api_key: str, model_id: str):
         """
-        Initialize Claude inference engine.
+        Initialize Gemini inference engine.
 
         Args:
-            client: Anthropic API client
-            model_id: Claude model identifier (e.g., "claude-haiku-4-5-20251001")
+            api_key: Google API key
+            model_id: Gemini model identifier (e.g., "gemini-2.0-flash", "gemini-1.5-pro")
         """
-        self.client = client
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(
+            model_name=model_id,
+            system_instruction=SYSTEM_MESSAGE
+        )
         self.model_id = model_id
-        logger.info(f"Initialized ClaudeInference with model: {model_id}")
+        logger.info(f"Initialized GeminiInference with model: {model_id}")
 
     def generate(
         self,
@@ -46,37 +50,38 @@ class ClaudeInference(BaseInference):
         **kwargs
     ) -> List[str]:
         """
-        Generate text using Claude API.
+        Generate text using Gemini API.
 
         Args:
             prompt: Input prompt text
             max_length: Maximum output length in tokens
             temperature: Sampling temperature (0-2)
             top_p: Nucleus sampling parameter
-            top_k: Top-k sampling parameter (unused by Claude, kept for compatibility)
-            num_return_sequences: Number of sequences to generate (Claude always returns 1)
-            do_sample: Whether to use sampling (ignored by Claude)
+            top_k: Top-k sampling parameter
+            num_return_sequences: Number of sequences to generate
+            do_sample: Whether to use sampling (unused by Gemini)
             stop_sequences: Sequences that stop generation
-            timeout_seconds: Request timeout (unused, kept for compatibility)
+            timeout_seconds: Request timeout (unused by Gemini)
             **kwargs: Additional parameters (unused)
 
         Returns:
             List containing the generated text
         """
         try:
-            response = self.client.messages.create(
-                model=self.model_id,
-                max_tokens=max_length,
-                system=self.SYSTEM_MESSAGE,
-                messages=[{"role": "user", "content": prompt}],
+            import google.generativeai as genai
+            config = genai.types.GenerationConfig(
+                max_output_tokens=max_length,
                 temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
                 stop_sequences=stop_sequences or [],
             )
-            text = response.content[0].text
+            response = self.model.generate_content(prompt, generation_config=config)
+            text = response.text
             logger.info(f"Generated text with {len(text.split())} words")
             return [text]
-        except anthropic.APIError as e:
-            logger.error(f"Claude API error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Gemini API error: {str(e)}")
             raise
 
     def generate_with_streaming(
@@ -93,7 +98,7 @@ class ClaudeInference(BaseInference):
         **kwargs
     ) -> str:
         """
-        Generate text using Claude API with streaming callback.
+        Generate text using Gemini API with streaming callback.
 
         Args:
             prompt: Input prompt text
@@ -101,31 +106,36 @@ class ClaudeInference(BaseInference):
             max_length: Maximum output length in tokens
             temperature: Sampling temperature (0-2)
             top_p: Nucleus sampling parameter
-            top_k: Top-k sampling parameter (unused by Claude)
-            do_sample: Whether to use sampling (ignored by Claude)
+            top_k: Top-k sampling parameter
+            do_sample: Whether to use sampling (unused by Gemini)
             stop_sequences: Sequences that stop generation
-            timeout_seconds: Request timeout (unused)
+            timeout_seconds: Request timeout (unused by Gemini)
             **kwargs: Additional parameters (unused)
 
         Returns:
             Complete generated text
         """
         try:
-            full_text = ""
-            with self.client.messages.stream(
-                model=self.model_id,
-                max_tokens=max_length,
-                system=self.SYSTEM_MESSAGE,
-                messages=[{"role": "user", "content": prompt}],
+            import google.generativeai as genai
+            config = genai.types.GenerationConfig(
+                max_output_tokens=max_length,
                 temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
                 stop_sequences=stop_sequences or [],
-            ) as stream:
-                for text in stream.text_stream:
-                    callback(text)
-                    full_text += text
+            )
+            full_text = ""
+            for chunk in self.model.generate_content(
+                prompt,
+                generation_config=config,
+                stream=True,
+            ):
+                if chunk.text:
+                    callback(chunk.text)
+                    full_text += chunk.text
 
             logger.info(f"Generated streaming text with {len(full_text.split())} words")
             return full_text
-        except anthropic.APIError as e:
-            logger.error(f"Claude API streaming error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Gemini API streaming error: {str(e)}")
             raise
