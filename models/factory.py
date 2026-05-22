@@ -21,9 +21,8 @@ PROVIDER_MODELS = {
         "GPT-4 Turbo (Smart)": "gpt-4-turbo",
     },
     "Gemini": {
-        "Gemini 2.0 Flash (Fast)": "gemini-2.0-flash",
-        "Gemini 1.5 Flash (Balanced)": "gemini-1.5-flash",
-        "Gemini 1.5 Pro (Best)": "gemini-1.5-pro",
+        "Gemini 2.5 Flash (Fast)": "gemini-2.5-flash",
+        "Gemini 2.5 Lite (Balanced)": "gemini-2.5-lite",
     },
 }
 
